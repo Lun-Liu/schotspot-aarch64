@@ -118,6 +118,15 @@
   develop(intx, OptoPeepholeAt, -1,                                         \
           "Apply peephole optimizations to this peephole rule")             \
                                                                             \
+  product(bool, SC, false,                                                  \
+          "Force SC for code, treat every read and write as volatile, essentially equal to +SCInter, +SCComp")      \
+                                                                            \
+  product(bool, SCInter, false,                                             \
+          "Seperate flag for SC in inter mode.")                            \
+                                                                            \
+  product(bool, SCComp, false,                                              \
+          "Seperate flag for SC in compiler mode.")                         \
+                                                                            \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \
                                                                             \
