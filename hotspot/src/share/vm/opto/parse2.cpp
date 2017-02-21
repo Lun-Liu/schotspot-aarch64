@@ -45,28 +45,39 @@ extern int explicit_null_checks_inserted,
 
 //---------------------------------array_load----------------------------------
 void Parse::array_load(BasicType elem_type) {
+  bool is_vol = (SC || SCComp);
   const Type* elem = Type::TOP;
   Node* adr = array_addressing(elem_type, 0, &elem);
   if (stopped())  return;     // guaranteed null or range check
   dec_sp(2);                  // Pop array and index
   const TypeAryPtr* adr_type = TypeAryPtr::get_array_body_type(elem_type);
-  Node* ld = make_load(control(), adr, elem, elem_type, adr_type, MemNode::unordered);
+  MemNode::MemOrd mo = is_vol ? MemNode::acquire : MemNode::unordered;
+  Node* ld = make_load(control(), adr, elem, elem_type, adr_type, mo, LoadNode::DependsOnlyOnTest, is_vol);
   push(ld);
+  if(is_vol)
+    insert_mem_bar(Op_MemBarAcquire, ld);
 }
 
 
 //--------------------------------array_store----------------------------------
 void Parse::array_store(BasicType elem_type) {
+  bool is_vol = (SC || SCComp);
   const Type* elem = Type::TOP;
   Node* adr = array_addressing(elem_type, 1, &elem);
   if (stopped())  return;     // guaranteed null or range check
   Node* val = pop();
   dec_sp(2);                  // Pop array and index
+  if(is_vol)
+    insert_mem_bar(Op_MemBarRelease);
   const TypeAryPtr* adr_type = TypeAryPtr::get_array_body_type(elem_type);
   if (elem == TypeInt::BOOL) {
     elem_type = T_BOOLEAN;
   }
+  const MemNode::MemOrd mo = is_vol ? MemNode::release : StoreNode::release_if_reference(elem_type);
   store_to_memory(control(), adr, val, elem_type, adr_type, StoreNode::release_if_reference(elem_type));
+  Node* store = store_to_memory(control(), adr, val, elem_type, adr_type, mo, is_vol);
+  if(is_vol)
+    insert_mem_bar(Op_MemBarVolatile, store);
 }
 
 
@@ -1699,17 +1710,27 @@ void Parse::do_one_bytecode() {
   case Bytecodes::_faload: array_load(T_FLOAT);  break;
   case Bytecodes::_aaload: array_load(T_OBJECT); break;
   case Bytecodes::_laload: {
+    bool is_vol = (SC || SCComp);
     a = array_addressing(T_LONG, 0);
     if (stopped())  return;     // guaranteed null or range check
     dec_sp(2);                  // Pop array and index
-    push_pair(make_load(control(), a, TypeLong::LONG, T_LONG, TypeAryPtr::LONGS, MemNode::unordered));
+    MemNode::MemOrd mo = is_vol ? MemNode::acquire : MemNode::unordered;
+    Node* ld = make_load(control(), a, TypeLong::LONG, T_LONG, TypeAryPtr::LONGS, mo, LoadNode::DependsOnlyOnTest, is_vol);
+    push_pair(ld);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarAcquire, ld);
     break;
   }
   case Bytecodes::_daload: {
+    bool is_vol = (SC || SCComp);
     a = array_addressing(T_DOUBLE, 0);
     if (stopped())  return;     // guaranteed null or range check
     dec_sp(2);                  // Pop array and index
-    push_pair(make_load(control(), a, Type::DOUBLE, T_DOUBLE, TypeAryPtr::DOUBLES, MemNode::unordered));
+    MemNode::MemOrd mo = is_vol ? MemNode::acquire : MemNode::unordered;
+    Node* ld = make_load(control(), a, TypeLong::LONG, T_LONG, TypeAryPtr::LONGS, mo, LoadNode::DependsOnlyOnTest, is_vol);
+    push_pair(ld);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarAcquire, ld);
     break;
   }
   case Bytecodes::_bastore: array_store(T_BYTE);  break;
@@ -1724,9 +1745,14 @@ void Parse::do_one_bytecode() {
     c = pop();                  // Oop to store
     b = pop();                  // index (already used)
     a = pop();                  // the array itself
+    bool is_vol = (SC || SCComp);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarRelease);
     const TypeOopPtr* elemtype  = _gvn.type(a)->is_aryptr()->elem()->make_oopptr();
     const TypeAryPtr* adr_type = TypeAryPtr::OOPS;
     Node* store = store_oop_to_array(control(), a, d, adr_type, c, elemtype, T_OBJECT, MemNode::release);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarVolatile, store);
     break;
   }
   case Bytecodes::_lastore: {
@@ -1734,7 +1760,13 @@ void Parse::do_one_bytecode() {
     if (stopped())  return;     // guaranteed null or range check
     c = pop_pair();
     dec_sp(2);                  // Pop array and index
-    store_to_memory(control(), a, c, T_LONG, TypeAryPtr::LONGS, MemNode::unordered);
+    bool is_vol = (SC || SCComp);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarRelease);
+    MemNode::MemOrd mo = is_vol ? MemNode::release : MemNode::unordered;
+    Node* store = store_to_memory(control(), a, c, T_LONG, TypeAryPtr::LONGS, mo);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarVolatile, store);
     break;
   }
   case Bytecodes::_dastore: {
@@ -1743,7 +1775,13 @@ void Parse::do_one_bytecode() {
     c = pop_pair();
     dec_sp(2);                  // Pop array and index
     c = dstore_rounding(c);
-    store_to_memory(control(), a, c, T_DOUBLE, TypeAryPtr::DOUBLES, MemNode::unordered);
+    bool is_vol = (SC || SCComp);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarRelease);
+    MemNode::MemOrd mo = is_vol ? MemNode::release : MemNode::unordered;
+    Node* store = store_to_memory(control(), a, c, T_DOUBLE, TypeAryPtr::DOUBLES, mo);
+    if(is_vol)
+      insert_mem_bar(Op_MemBarVolatile, store);
     break;
   }
   case Bytecodes::_getfield:

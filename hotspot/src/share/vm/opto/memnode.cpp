@@ -957,6 +957,9 @@ uint LoadNode::hash() const {
 }
 
 static bool skip_through_membars(Compile::AliasType* atp, const TypeInstPtr* tp, bool eliminate_boxing) {
+  if(SC || SCComp){
+    return false;
+  }
   if ((atp != NULL) && (atp->index() >= Compile::AliasIdxRaw)) {
     bool non_volatile = (atp->field() != NULL) && !atp->field()->is_volatile();
     bool is_stable_ary = FoldStableValues &&
