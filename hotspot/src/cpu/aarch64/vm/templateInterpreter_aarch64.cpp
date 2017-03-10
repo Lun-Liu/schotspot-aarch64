@@ -782,6 +782,8 @@ address InterpreterGenerator::generate_CRC32_update_entry() {
 
     __ ornw(crc, zr, crc); // ~crc
     __ update_byte_crc32(crc, val, tbl);
+    if(SC || SCInter)
+      __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
     __ ornw(crc, zr, crc); // ~crc
 
     // result in c_rarg0
@@ -850,6 +852,9 @@ address InterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractInterpret
 
     // We are frameless so we can just jump to the stub.
     __ b(CAST_FROM_FN_PTR(address, StubRoutines::updateBytesCRC32()));
+
+    if(SC || SCInter)
+      __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 
     // generate a vanilla native entry as the slow path
     __ bind(slow_path);
@@ -1231,7 +1236,7 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // restore bcp to have legal interpreter frame, i.e., bci == 0 <=>
   // rbcp == code_base()
-  __ ldr(rbcp, Address(rmethod, Method::const_offset()));   // get ConstMethod* 
+  __ ldr(rbcp, Address(rmethod, Method::const_offset()));   // get ConstMethod*
   __ add(rbcp, rbcp, in_bytes(ConstMethod::codes_offset()));          // get codebase
   // handle exceptions (exception handling will handle unlocking!)
   {

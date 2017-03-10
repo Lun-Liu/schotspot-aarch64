@@ -5928,10 +5928,17 @@ bool LibraryCallKit::inline_multiplyToLen() {
 
     Node* z_start = array_element_address(z, intcon(0), T_INT);
 
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarRelease);
+    }
     Node* call = make_runtime_call(RC_LEAF|RC_NO_FP,
                                    OptoRuntime::multiplyToLen_Type(),
                                    stubAddr, stubName, TypePtr::BOTTOM,
                                    x_start, xlen, y_start, ylen, z_start, zlen);
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarAcquire);
+      insert_mem_bar(Op_MemBarVolatile);
+    }
   } // original reexecute is set back here
 
   C->set_has_split_ifs(true); // Has chance for split-if optimization
@@ -5976,10 +5983,19 @@ bool LibraryCallKit::inline_squareToLen() {
   Node* x_start = array_element_address(x, intcon(0), x_elem);
   Node* z_start = array_element_address(z, intcon(0), z_elem);
 
+  if(SC || SCComp){
+    insert_mem_bar(Op_MemBarRelease);
+  }
+
   Node*  call = make_runtime_call(RC_LEAF|RC_NO_FP,
                                   OptoRuntime::squareToLen_Type(),
                                   stubAddr, stubName, TypePtr::BOTTOM,
                                   x_start, len, z_start, zlen);
+
+  if(SC || SCComp){
+    insert_mem_bar(Op_MemBarAcquire);
+    insert_mem_bar(Op_MemBarVolatile);
+  }
 
   set_result(z);
   return true;
@@ -6024,10 +6040,20 @@ bool LibraryCallKit::inline_mulAdd() {
   Node* out_start = array_element_address(out, intcon(0), out_elem);
   Node* in_start = array_element_address(in, intcon(0), in_elem);
 
+
+  if(SC || SCComp){
+    insert_mem_bar(Op_MemBarRelease);
+  }
+
   Node*  call = make_runtime_call(RC_LEAF|RC_NO_FP,
                                   OptoRuntime::mulAdd_Type(),
                                   stubAddr, stubName, TypePtr::BOTTOM,
                                   out_start,in_start, new_offset, len, k);
+
+  if(SC || SCComp){
+    insert_mem_bar(Op_MemBarAcquire);
+    insert_mem_bar(Op_MemBarVolatile);
+  }
   Node* result = _gvn.transform(new (C) ProjNode(call, TypeFunc::Parms));
   set_result(result);
   return true;
@@ -6083,11 +6109,20 @@ bool LibraryCallKit::inline_montgomeryMultiply() {
     Node* n_start = array_element_address(n, intcon(0), n_elem);
     Node* m_start = array_element_address(m, intcon(0), m_elem);
 
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarRelease);
+    }
+
     Node* call = make_runtime_call(RC_LEAF,
                                    OptoRuntime::montgomeryMultiply_Type(),
                                    stubAddr, stubName, TypePtr::BOTTOM,
                                    a_start, b_start, n_start, len, inv, top(),
                                    m_start);
+
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarAcquire);
+      insert_mem_bar(Op_MemBarVolatile);
+    }
     set_result(m);
   }
 
@@ -6137,11 +6172,20 @@ bool LibraryCallKit::inline_montgomerySquare() {
     Node* n_start = array_element_address(n, intcon(0), n_elem);
     Node* m_start = array_element_address(m, intcon(0), m_elem);
 
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarRelease);
+    }
+
     Node* call = make_runtime_call(RC_LEAF,
                                    OptoRuntime::montgomerySquare_Type(),
                                    stubAddr, stubName, TypePtr::BOTTOM,
                                    a_start, n_start, len, inv, top(),
                                    m_start);
+
+    if(SC || SCComp){
+      insert_mem_bar(Op_MemBarAcquire);
+      insert_mem_bar(Op_MemBarVolatile);
+    }
     set_result(m);
   }
 
