@@ -3052,6 +3052,8 @@ Node *MemBarNode::Ideal(PhaseGVN *phase, bool can_reshape) {
             t_oop->offset() != Type::OffsetTop) {
           eliminate = true;
         }
+      } else if ( AggresiveMemBar && opc == Op_MemBarAcquire && my_mem!=NULL && !my_mem -> is_Mem() ){
+        eliminate = true;
       }
     } else if (opc == Op_MemBarRelease) {
       // Final field stores.

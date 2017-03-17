@@ -164,8 +164,8 @@ bool ConnectionGraph::compute_escape() {
       // escape status of the associated Allocate node some of them
       // may be eliminated.
       storestore_worklist.append(n);
-    } else if (n->is_MemBar() && (n->Opcode() == Op_MemBarRelease) &&
-               (n->req() > MemBarNode::Precedent)) {
+    } else if (n->is_MemBar() &&( AggresiveMemBar || (n->Opcode() == Op_MemBarRelease) &&
+               (n->req() > MemBarNode::Precedent))) {
       record_for_optimizer(n);
 #ifdef ASSERT
     } else if (n->is_AddP()) {

@@ -127,6 +127,9 @@
   product(bool, SCComp, false,                                              \
           "Seperate flag for SC in compiler mode.")                         \
                                                                             \
+  product(bool, AggresiveMemBar, false,                                     \
+          "optimize membar for scalar repeacable objects.")                 \
+                                                                            \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \
                                                                             \
