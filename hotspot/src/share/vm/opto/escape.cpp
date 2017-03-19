@@ -109,6 +109,7 @@ bool ConnectionGraph::compute_escape() {
 
   // Worklists used by EA.
   Unique_Node_List delayed_worklist;
+  Unique_Node_List membar_acquire_worklist;
   GrowableArray<Node*> alloc_worklist;
   GrowableArray<Node*> ptr_cmp_worklist;
   GrowableArray<Node*> storestore_worklist;
@@ -164,9 +165,15 @@ bool ConnectionGraph::compute_escape() {
       // escape status of the associated Allocate node some of them
       // may be eliminated.
       storestore_worklist.append(n);
-    } else if (n->is_MemBar() &&( AggresiveMemBar || (n->Opcode() == Op_MemBarRelease) &&
-               (n->req() > MemBarNode::Precedent))) {
-      record_for_optimizer(n);
+    } else if (n->is_MemBar()){
+      if(AggresiveMemBar){
+        record_for_optimizer(n);
+        if(n->Opcode() == Op_MemBarAcquire && n->req() > MemBarNode::Precedent){
+          membar_acquire_worklist.push(n);
+        }
+      } else if( n-> Opcode() == Op_MemBarRelease && n ->req()> MemBarNode::Precedent){
+        record_for_optimizer(n);
+      }
 #ifdef ASSERT
     } else if (n->is_AddP()) {
       // Collect address nodes for graph verification.
@@ -306,6 +313,25 @@ bool ConnectionGraph::compute_escape() {
     tty->cr();
 #endif
   }
+  
+  //6. Update escape optimization info for membar acquire
+  if(AggresiveMemBar){
+    while(membar_acquire_worklist.size()>0){
+      MemBarNode* membar = membar_acquire_worklist.pop()->as_MemBar();
+      Node* my_mem = membar -> in(MemBarNode::Precedent);
+      if(my_mem != NULL && my_mem->is_Mem()){
+        const TypeOopPtr* t_oop = my_mem->in(MemNode::Address)->bottom_type()->isa_oopptr();
+        // Check for scalar replaced object reference.
+        if( t_oop != NULL && t_oop->is_known_instance_field() &&
+                t_oop->offset() != Type::OffsetBot &&
+                t_oop->offset() != Type::OffsetTop) {
+          membar->_is_scalar_replaceable = true; 
+        }
+      }
+    }
+    
+  }
+
   return has_non_escaping_obj;
 }
 

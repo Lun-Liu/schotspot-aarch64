@@ -2986,6 +2986,8 @@ MemBarNode::MemBarNode(Compile* C, int alias_idx, Node* precedent)
   init_req(TypeFunc::ReturnAdr,top);
   if (precedent != NULL)
     init_req(TypeFunc::Parms, precedent);
+
+  _is_scalar_replaceable = false;
 }
 
 //------------------------------cmp--------------------------------------------
@@ -3052,8 +3054,9 @@ Node *MemBarNode::Ideal(PhaseGVN *phase, bool can_reshape) {
             t_oop->offset() != Type::OffsetTop) {
           eliminate = true;
         }
-      } else if ( AggresiveMemBar && opc == Op_MemBarAcquire && my_mem!=NULL && !my_mem -> is_Mem() ){
-        eliminate = true;
+      } else if ( AggresiveMemBar && opc == Op_MemBarAcquire && my_mem != NULL && !my_mem -> is_Mem() ){
+        if( _is_scalar_replaceable == true )
+          eliminate = true;
       }
     } else if (opc == Op_MemBarRelease) {
       // Final field stores.

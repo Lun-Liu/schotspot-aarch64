@@ -1035,6 +1035,8 @@ class MemBarNode: public MultiNode {
   const TypePtr* _adr_type;
 
 public:
+  //results from EA
+  bool _is_scalar_replaceable;
   enum {
     Precedent = TypeFunc::Parms  // optional edge to force precedence
   };
@@ -1058,6 +1060,7 @@ public:
 // visibility.  Inserted after a volatile load.
 class MemBarAcquireNode: public MemBarNode {
 public:
+  
   MemBarAcquireNode(Compile* C, int alias_idx, Node* precedent)
     : MemBarNode(C, alias_idx, precedent) {}
   virtual int Opcode() const;
