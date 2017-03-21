@@ -319,6 +319,10 @@ bool ConnectionGraph::compute_escape() {
     while(membar_acquire_worklist.size()>0){
       MemBarNode* membar = membar_acquire_worklist.pop()->as_MemBar();
       Node* my_mem = membar -> in(MemBarNode::Precedent);
+      //skip DecodeN to get to LoadNode
+      if(my_mem != NULL && my_mem -> is_DecodeN()){
+        my_mem = my_mem -> in(1);
+      }
       if(my_mem != NULL && my_mem->is_Mem()){
         const TypeOopPtr* t_oop = my_mem->in(MemNode::Address)->bottom_type()->isa_oopptr();
         // Check for scalar replaced object reference.
