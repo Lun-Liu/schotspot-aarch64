@@ -109,7 +109,7 @@ bool ConnectionGraph::compute_escape() {
 
   // Worklists used by EA.
   Unique_Node_List delayed_worklist;
-  Unique_Node_List membar_acquire_worklist;
+  Unique_Node_List membar_escape_worklist;
   GrowableArray<Node*> alloc_worklist;
   GrowableArray<Node*> ptr_cmp_worklist;
   GrowableArray<Node*> storestore_worklist;
@@ -168,8 +168,8 @@ bool ConnectionGraph::compute_escape() {
     } else if (n->is_MemBar()){
       if(AggresiveMemBar){
         record_for_optimizer(n);
-        if(n->Opcode() == Op_MemBarAcquire && n->req() > MemBarNode::Precedent){
-          membar_acquire_worklist.push(n);
+        if(((n->Opcode() == Op_MemBarAcquire) || (n->Opcode() == Op_MemBarVolatile)) && n->req() > MemBarNode::Precedent){
+          membar_escape_worklist.push(n);
         }
       } else if( n-> Opcode() == Op_MemBarRelease && n ->req()> MemBarNode::Precedent){
         record_for_optimizer(n);
@@ -316,21 +316,22 @@ bool ConnectionGraph::compute_escape() {
   
   //6. Update escape optimization info for membar acquire
   if(AggresiveMemBar){
-    while(membar_acquire_worklist.size()>0){
-      MemBarNode* membar = membar_acquire_worklist.pop()->as_MemBar();
+    while(membar_escape_worklist.size()>0){
+      MemBarNode* membar = membar_escape_worklist.pop()->as_MemBar();
       Node* my_mem = membar -> in(MemBarNode::Precedent);
       //skip DecodeN to get to LoadNode
       if(my_mem != NULL && my_mem -> is_DecodeN()){
         my_mem = my_mem -> in(1);
       }
       if(my_mem != NULL && my_mem->is_Mem()){
-        const TypeOopPtr* t_oop = my_mem->in(MemNode::Address)->bottom_type()->isa_oopptr();
-        // Check for scalar replaced object reference.
-        if( t_oop != NULL && t_oop->is_known_instance_field() &&
-                t_oop->offset() != Type::OffsetBot &&
-                t_oop->offset() != Type::OffsetTop) {
-          membar->_is_scalar_replaceable = true; 
-        }
+        Node* addr = my_mem->as_Mem()->in(MemNode::Address);
+        addr->dump();
+        PointsToNode* ptn = ptnode_adr(addr->_idx);
+        if( ptn != NULL && ptn != phantom_obj){
+          if((ptn->escape_state() == PointsToNode::NoEscape) || (ptn->escape_state() == PointsToNode::ArgEscape)){
+            membar->_is_scalar_replaceable = true;
+          }
+        } 
       }
     }
     

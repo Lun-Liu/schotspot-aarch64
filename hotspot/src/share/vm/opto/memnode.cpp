@@ -3047,17 +3047,19 @@ Node *MemBarNode::Ideal(PhaseGVN *phase, bool can_reshape) {
         }
       }
       if (my_mem != NULL && my_mem->is_Mem()) {
-        const TypeOopPtr* t_oop = my_mem->in(MemNode::Address)->bottom_type()->isa_oopptr();
-        // Check for scalar replaced object reference.
-        if( t_oop != NULL && t_oop->is_known_instance_field() &&
-            t_oop->offset() != Type::OffsetBot &&
-            t_oop->offset() != Type::OffsetTop) {
-          eliminate = true;
+        if(AggresiveMemBar){
+          if( _is_scalar_replaceable == true )
+            eliminate = true;
+        } else {
+          const TypeOopPtr* t_oop = my_mem->in(MemNode::Address)->bottom_type()->isa_oopptr();
+          // Check for scalar replaced object reference.
+          if( t_oop != NULL && t_oop->is_known_instance_field() &&
+              t_oop->offset() != Type::OffsetBot &&
+              t_oop->offset() != Type::OffsetTop) {
+            eliminate = true;
+          }
         }
-      } else if ( AggresiveMemBar && opc == Op_MemBarAcquire && my_mem != NULL && !my_mem -> is_Mem() ){
-        if( _is_scalar_replaceable == true )
-          eliminate = true;
-      }
+      } 
     } else if (opc == Op_MemBarRelease) {
       // Final field stores.
       Node* alloc = AllocateNode::Ideal_allocation(in(MemBarNode::Precedent), phase);
