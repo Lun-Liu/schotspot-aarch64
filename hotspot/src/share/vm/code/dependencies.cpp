@@ -1039,7 +1039,10 @@ Klass* ClassHierarchyWalker::find_witness_in(KlassDepChange& changes,
     return context_type;
   }
 
-  assert(!is_participant(new_type), "only old classes are participants");
+  //assert(!is_participant(new_type), "only old classes are participants");
+  if(!SCDynamic){
+    assert(!is_participant(new_type), "only old classes are participants");
+  }
   if (participants_hide_witnesses) {
     // If the new type is a subtype of a participant, we are done.
     for (int i = 0; i < num_participants(); i++) {

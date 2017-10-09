@@ -2069,6 +2069,13 @@ void SystemDictionary::update_dictionary(int d_index, unsigned int d_hash,
     }
   }
 
+  if(SCDynamic){
+    if(k->class_loader() == class_loader()){
+      k -> set_sc_header(scOopDesc::prototype());
+    }
+  }
+
+
   // Make a new system dictionary entry.
   Klass* sd_check = find_class(d_index, d_hash, name, loader_data);
   if (sd_check == NULL) {

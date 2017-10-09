@@ -1852,6 +1852,68 @@ JRT_LEAF(void, SharedRuntime::reguard_yellow_pages())
 JRT_END
 
 
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, JavaThread* thread))
+  printf("%s\n", "SC handling C");
+  oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
+  Klass* k = obj->klass();
+  instanceKlassHandle ik(thread,k);
+  //if(!ik->set_sc_deoptimizing()){
+  //  printf("[%p] SC Deopt entered later by %s, JavaThread %p\n", Thread::current(), ik->internal_name(), thread);
+  //  while(true){
+  //    if(ik->is_sc_deoptimized())
+  //      break;
+  //    printf("WAITTTT\n");
+  //  }
+  //  return;
+  //}
+  if(ik->is_sc_deoptimized()){
+    //printf("[%p] SC Deopt entered later by %s, JavaThread %p\n", Thread::current(), ik->internal_name(), thread);
+    //NOTE: It's OK to return immediately. Because we are holding Compile_lock
+    // when entering this runtime method, this means no two sc_handling_C can happen
+    // concurrently, so the previous deoptimizaiton must already finished.
+    return;
+  }
+  ik->set_sc_deoptimized();
+  //printf("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p\n", Thread::current(), ik->internal_name(), thread, obj->sc_mark()->owner_thread());
+  Universe::flush_sc_dependents_on(ik);
+  //ik->set_sc_deoptimized();
+  //CodeCache::mark_all_nmethods_for_deoptimization();
+  //VM_Deoptimize op;
+  //VMThread::execute(&op);
+  //Handle h_obj(THREAD, obj);
+  //printf("SC Handling %s, %d. \n", ik->internal_name(), ik->is_sc_deoptimized());
+  //printf("SC HANDLING: ");
+  //obj->print();
+  //printf("\n");
+  //thread -> print();
+  //JavaThread* master_thread = obj -> sc_mark()-> owner_thread();
+  //master_thread->print();
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, oopDesc* _obj, Method* m))
+  printf("%s\n", "SC handling runtime");
+  //printf("%s\n", m->name_and_sig_as_C_string());
+  if(_obj->is_array()){
+    return;
+  }
+  oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
+  Klass* k = obj->klass();
+  instanceKlassHandle ik(thread,k);
+  if(ik->is_sc_deoptimized()){
+    return;
+  }
+  ik->set_sc_deoptimized();
+  Universe::flush_sc_dependents_on(ik);
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
+
+
 // Handles the uncommon case in locking, i.e., contention or an inflated lock.
 #ifndef PRODUCT
 int SharedRuntime::_monitor_enter_ctr=0;

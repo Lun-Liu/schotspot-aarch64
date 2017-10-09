@@ -53,6 +53,7 @@ class       AllocateArrayNode;
 class     BoxLockNode;
 class     LockNode;
 class     UnlockNode;
+class     SCNode;
 class JVMState;
 class OopMap;
 class State;
@@ -1096,5 +1097,56 @@ public:
   JVMState* dbg_jvms() const { return NULL; }
 #endif
 };
+
+
+//------------------------------SC---------------------------------------
+// High-level dynamic sc operation
+//
+// This is a subclass of CallNode because it is a macro node which gets expanded
+// into a code sequence containing a call.  This node takes 3 "parameters":
+//    0  -  object to check 
+//    1 -   a SCCheckNode
+//
+class SCNode : public CallNode {
+public:
+
+  static const TypeFunc *sc_type() {
+    // create input type (domain)
+    const Type **fields = TypeTuple::fields(2);
+    fields[TypeFunc::Parms+0] = TypeInstPtr::NOTNULL;  // Object to be checked
+    fields[TypeFunc::Parms+1] = TypeInt::BOOL;    // SCCheckNode
+    const TypeTuple *domain = TypeTuple::make(TypeFunc::Parms+2,fields);
+
+    // create result type (range)
+    fields = TypeTuple::fields(0);
+
+    const TypeTuple *range = TypeTuple::make(TypeFunc::Parms+0,fields);
+
+    return TypeFunc::make(domain,range);
+  }
+
+  virtual int Opcode() const;
+  virtual uint size_of() const; // Size is bigger
+  SCNode(Compile* C, const TypeFunc *tf) : CallNode( tf, NULL, TypeRawPtr::BOTTOM ) {
+    init_class_id(Class_SC);
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+  virtual bool        guaranteed_safepoint()  { return false; }
+
+  virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
+  // Expansion modifies the JVMState, so we need to clone it
+  virtual void  clone_jvms(Compile* C) {
+    if (jvms() != NULL) {
+      set_jvms(jvms()->clone_deep(C));
+      jvms()->set_map_deep(this);
+    }
+  }
+
+  Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
+  Node *   check_node() const  {return in(TypeFunc::Parms + 1); }
+
+};
+
 
 #endif // SHARE_VM_OPTO_CALLNODE_HPP

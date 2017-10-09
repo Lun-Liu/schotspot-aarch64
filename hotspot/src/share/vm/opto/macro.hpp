@@ -100,6 +100,7 @@ private:
   bool eliminate_locking_node(AbstractLockNode *alock);
   void expand_lock_node(LockNode *lock);
   void expand_unlock_node(UnlockNode *unlock);
+  void expand_sc_node(SCNode *sc);
 
   int replace_input(Node *use, Node *oldref, Node *newref);
   void copy_call_debug_info(CallNode *oldcall, CallNode * newcall);

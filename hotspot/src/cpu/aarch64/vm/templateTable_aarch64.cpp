@@ -3536,6 +3536,12 @@ void TemplateTable::_new() {
     } else {
       __ mov(rscratch1, (intptr_t)markOopDesc::prototype());
     }
+
+
+    // FOR SC HEADER
+    //__ movptr(rscratch1, Address(rsi, Klass::sc_header_offset()));
+    __ str(rthread, Address(r0, oopDesc::sc_mark_offset_in_bytes()));
+
     __ str(rscratch1, Address(r0, oopDesc::mark_offset_in_bytes()));
     __ store_klass_gap(r0, zr);  // zero klass gap for compressed oops
     __ store_klass(r0, r4);      // store klass last

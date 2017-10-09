@@ -629,8 +629,108 @@ static int dependentCheckCount = 0;
 #endif // PRODUCT
 
 
+
+int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
+  MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+
+#ifndef PRODUCT
+  dependentCheckTime.start();
+  dependentCheckCount++;
+#endif // PRODUCT
+
+  int number_of_marked_CodeBlobs = 0;
+
+  // search the hierarchy looking for nmethods which are affected by the loading of this class
+
+  // then search the interfaces this class implements looking for nmethods
+  // which might be dependent of the fact that an interface only had one
+  // implementor.
+
+  { No_Safepoint_Verifier nsv;
+    for (DepChange::ContextStream str(changes, nsv); str.next(); ) {
+      Klass* d = str.klass();
+      if(SCDynamic){
+        //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
+        //TODO: fix this, should set deoptimized later
+        //InstanceKlass::cast(d)->set_sc_deoptimizing();
+        InstanceKlass::cast(d)->set_sc_deoptimized();
+      //  d->print();
+      }
+      number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
+    }
+  }
+
+  if (VerifyDependencies) {
+    // Turn off dependency tracing while actually testing deps.
+    NOT_PRODUCT( FlagSetting fs(TraceDependencies, false) );
+    FOR_ALL_ALIVE_NMETHODS(nm) {
+      if (!nm->is_marked_for_deoptimization() &&
+          nm->check_all_dependencies()) {
+        ResourceMark rm;
+        tty->print_cr("Should have been marked for deoptimization:");
+        changes.print();
+        nm->print();
+        nm->print_dependencies();
+      }
+    }
+  }
+
+#ifndef PRODUCT
+  dependentCheckTime.stop();
+#endif // PRODUCT
+
+  return number_of_marked_CodeBlobs;
+}
+
+int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
+  MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+
+#ifndef PRODUCT
+  dependentCheckTime.start();
+  dependentCheckCount++;
+#endif // PRODUCT
+
+  int number_of_marked_CodeBlobs = 0;
+
+  // search the hierarchy looking for nmethods which are affected by the loading of this class
+
+  // then search the interfaces this class implements looking for nmethods
+  // which might be dependent of the fact that an interface only had one
+  // implementor.
+
+  Array<Method*>* old_methods = dependee->methods();
+  for (int i = 0; i < old_methods->length(); i++) {
+    ResourceMark rm;
+    Method* old_method = old_methods->at(i);
+    nmethod *nm = old_method->code();
+    if (nm != NULL) {
+      nm->mark_for_deoptimization();
+      printf("[%p] Deoptimize own method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+      number_of_marked_CodeBlobs++;
+    }
+  }
+
+  FOR_ALL_ALIVE_NMETHODS(nm) {
+    if (nm->is_marked_for_deoptimization()) {
+      // ...Already marked in the previous pass; don't count it again.
+    } else if (nm->is_evol_dependent_on(dependee())) {
+      ResourceMark rm;
+      nm->mark_for_deoptimization();
+      printf("[%p] Deoptimize dependent method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+      number_of_marked_CodeBlobs++;
+    } else  {
+      // flush caches in case they refer to a redefined Method*
+      //nm->clear_inline_caches();
+    }
+  }
+
+  return number_of_marked_CodeBlobs;
+}
+
+
 int CodeCache::mark_for_deoptimization(DepChange& changes) {
   MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+
 
 #ifndef PRODUCT
   dependentCheckTime.start();

@@ -1873,3 +1873,10 @@ void AbstractLockNode::log_lock_optimization(Compile *C, const char * tag)  cons
   }
 }
 
+uint SCNode::size_of() const { return sizeof(*this); }
+
+//=============================================================================
+Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
+  return NULL;
+}
+

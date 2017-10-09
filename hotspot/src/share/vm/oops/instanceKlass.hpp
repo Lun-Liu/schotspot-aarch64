@@ -178,6 +178,13 @@ class InstanceKlass: public Klass {
 
   static int number_of_instance_classes() { return _total_instanceKlass_count; }
 
+  enum SCState {
+    sc_safe,
+    //sc_deoptimizing,
+    sc_deoptimized
+  };
+
+
  private:
   static volatile int _total_instanceKlass_count;
 
@@ -227,6 +234,10 @@ class InstanceKlass: public Klass {
   // _misc_flags.
   bool            _is_marked_dependent;  // used for marking during flushing and deoptimization
   bool            _has_unloaded_dependent;
+
+  //mark for SCDynamic
+  u1              _sc_state;
+
 
   enum {
     _misc_rewritten                = 1 << 0, // methods rewritten.
@@ -479,6 +490,37 @@ class InstanceKlass: public Klass {
 
   bool has_unloaded_dependent() const         { return _has_unloaded_dependent; }
   void set_has_unloaded_dependent(bool value) { _has_unloaded_dependent = value; }
+
+  //bool is_sc_deoptimized() const         { return (_sc_state != sc_safe); }
+private:
+  void set_sc_state(SCState state)         { _sc_state = state;}
+public:
+  static int sc_safe_const()            { return sc_safe;}
+  SCState get_sc_state() const             { return (SCState)_sc_state;}
+  bool is_sc_safe() const                  { return _sc_state == sc_safe;}
+  bool is_sc_deoptimized() const           { return _sc_state == sc_deoptimized;}
+  //void set_is_sc_deoptimized(bool value) { _is_sc_deoptimized = value; }
+  //bool set_sc_deoptimizing()               { return __sync_bool_compare_and_swap(&_sc_state, sc_safe, sc_deoptimizing);}                    
+  //bool set_sc_deoptimized()              { return __sync_bool_compare_and_swap(&_sc_state, sc_deoptimizing, sc_deoptimized);}                    
+  /*bool set_sc_deoptimized()                { 
+      //can only be set if past the above check, no need to sync here    
+#ifndef PRODUCT
+    assert(_sc_state == sc_deoptimizing, "sc state should be deoptimizing");
+#endif
+    _sc_state = sc_deoptimized;
+    return true;
+  }*/
+  bool set_sc_deoptimized()                {
+    //can only be set if not already deoptimized    
+    if(_sc_state != sc_safe){
+      return false;
+    }
+    _sc_state = sc_deoptimized;
+    return true;
+
+  }
+  static ByteSize sc_deopt_offset()      { return in_ByteSize(offset_of(InstanceKlass, _sc_state)); }
+
 
   // initialization (virtuals from Klass)
   bool should_be_initialized() const;  // means that initialize should be called
@@ -784,6 +826,7 @@ class InstanceKlass: public Klass {
 
   // maintenance of deoptimization dependencies
   int mark_dependent_nmethods(DepChange& changes);
+  int mark_sc_dependent_nmethods(DepChange& changes);
   void add_dependent_nmethod(nmethod* nm);
   void remove_dependent_nmethod(nmethod* nm, bool delete_immediately);
 

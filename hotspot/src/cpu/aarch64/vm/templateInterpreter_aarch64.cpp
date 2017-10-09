@@ -1457,6 +1457,36 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
 #endif
   }
 
+  //for SCDynamic
+  {
+    Label exec;
+    __ ldrw(r0, access_flags);
+    __ tst(r0, JVM_ACC_STATIC);
+    __ br(Assembler::EQ, exec);
+    // not static method
+    // get receiver (this pointer)
+    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    __ load_klass(r0, r0);
+    // TODO: should assert InstanceKlass, assume it to be right now
+    __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
+    // TODO: use mask
+    __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
+    __ br(Assembler::NE, exec);
+    //// scSafe here, get curthread and compare
+    //__ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    //Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
+    //__ ldr(r0, mark_addr);
+    //__ cmp(r0, rthread);
+    ////__ xorptr(rax, rax);
+    //__ br(Assembler::EQ, exec);
+    //// TODO: Deopt here
+    //__ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    //__ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp), r0, rmethod);
+
+    __ bind(exec);
+  }
+
+
   // start execution
 #ifdef ASSERT
   {

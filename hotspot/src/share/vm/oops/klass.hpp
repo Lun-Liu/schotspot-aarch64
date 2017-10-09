@@ -75,6 +75,7 @@
 //    [class_loader_data]
 //    [modifier_flags]
 //    [access_flags  ]
+//    [sc_header]
 //    [last_biased_lock_bulk_revocation_time] (64 bits)
 //    [prototype_header]
 //    [biased_lock_revocation_count]
@@ -163,6 +164,8 @@ class Klass : public Metadata {
 
   jint        _modifier_flags;  // Processed access flags, for use by Class.getModifiers.
   AccessFlags _access_flags;    // Access flags. The class/interface distinction is stored here.
+
+  scOop  _sc_header;   // Used when biased sc is both enabled and disabled for this type
 
   // Biased locking implementation and statistics
   // (the 64-bit chunk goes first, to avoid some fragmentation)
@@ -585,6 +588,11 @@ protected:
   void set_has_vanilla_constructor()    { _access_flags.set_has_vanilla_constructor(); }
   bool has_miranda_methods () const     { return access_flags().has_miranda_methods(); }
   void set_has_miranda_methods()        { _access_flags.set_has_miranda_methods(); }
+
+ 
+  scOop sc_header() const      { return _sc_header; }
+  inline void set_sc_header(scOop header);
+  static ByteSize sc_header_offset() { return in_ByteSize(offset_of(Klass, _sc_header)); }
 
   // Biased locking support
   // Note: the prototype header is always set up to be at least the

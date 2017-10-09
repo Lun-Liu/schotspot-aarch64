@@ -123,6 +123,14 @@ class MacroAssembler: public Assembler {
   void biased_locking_exit (Register obj_reg, Register temp_reg, Label& done);
 
 
+  int biased_sc_enter(Register obj_reg,
+                           Register swap_reg, Register tmp_reg,
+                           Label& done);
+
+  void sc_check(Register obj, Register obj2, Register tmp,
+                 Register scr, Register cx1, Register cx2
+                 );
+
   // Helper functions for statistics gathering.
   // Unconditional atomic increment.
   void atomic_incw(Register counter_addr, Register tmp, Register tmp2);
@@ -802,6 +810,7 @@ public:
   // stored using routines that take a jobject.
   void store_heap_oop_null(Address dst);
 
+  void load_sc_header(Register dst, Register src);
   void load_prototype_header(Register dst, Register src);
 
   void store_klass_gap(Register dst, Register src);

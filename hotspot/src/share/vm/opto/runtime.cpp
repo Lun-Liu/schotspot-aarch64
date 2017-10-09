@@ -109,6 +109,7 @@ address OptoRuntime::_g1_wb_pre_Java                              = NULL;
 address OptoRuntime::_g1_wb_post_Java                             = NULL;
 address OptoRuntime::_vtable_must_compile_Java                    = NULL;
 address OptoRuntime::_complete_monitor_locking_Java               = NULL;
+address OptoRuntime::_complete_sc_handling_Java                   = NULL;
 address OptoRuntime::_rethrow_Java                                = NULL;
 
 address OptoRuntime::_slow_arraycopy_Java                         = NULL;
@@ -157,6 +158,7 @@ bool OptoRuntime::generate(ciEnv* env) {
   gen(env, _g1_wb_pre_Java                 , g1_wb_pre_Type               , SharedRuntime::g1_wb_pre        ,    0 , false, false, false);
   gen(env, _g1_wb_post_Java                , g1_wb_post_Type              , SharedRuntime::g1_wb_post       ,    0 , false, false, false);
   gen(env, _complete_monitor_locking_Java  , complete_monitor_enter_Type  , SharedRuntime::complete_monitor_locking_C, 0, false, false, false);
+  gen(env, _complete_sc_handling_Java      , complete_sc_handling_Type    , SharedRuntime::complete_sc_handling_C, 0, false, false, false);
   gen(env, _rethrow_Java                   , rethrow_Type                 , rethrow_C                       ,    2 , true , false, true );
 
   gen(env, _slow_arraycopy_Java            , slow_arraycopy_Type          , SharedRuntime::slow_arraycopy_C ,    0 , false, false, false);
@@ -592,6 +594,23 @@ const TypeFunc *OptoRuntime::zap_dead_locals_Type() {
   return TypeFunc::make(domain,range);
 }
 # endif
+
+
+//-----------------------------------------------------------------------------
+// SC Handling
+const TypeFunc *OptoRuntime::complete_sc_handling_Type() {
+  // create input type (domain)
+  const Type **fields = TypeTuple::fields(1);
+  fields[TypeFunc::Parms+0] = TypeInstPtr::NOTNULL;  // Object to be Locked
+  const TypeTuple *domain = TypeTuple::make(TypeFunc::Parms+1,fields);
+
+  // create result type (range)
+  fields = TypeTuple::fields(0);
+
+  const TypeTuple *range = TypeTuple::make(TypeFunc::Parms+0,fields);
+
+  return TypeFunc::make(domain,range);
+}
 
 
 //-----------------------------------------------------------------------------

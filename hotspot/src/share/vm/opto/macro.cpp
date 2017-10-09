@@ -1644,6 +1644,16 @@ PhaseMacroExpand::initialize_object(AllocateNode* alloc,
   }
   rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), mark_node, T_ADDRESS);
 
+  if(length == NULL){
+      // FOR SC HEADER
+      //Node* sc_mark_node = make_load(control, rawmem, klass_node, in_bytes(Klass::sc_header_offset()), TypeX_X, TypeX_X->basic_type());
+      Node* thread = transform_later(new (C) ThreadLocalNode());
+      //Node* cast_thread = transform_later(new (C) CastP2XNode(control, thread));
+      //Node* o_node = transform_later(new (C) OrXNode(cast_thread, sc_mark_node));
+      rawmem = make_store(control, rawmem, object, oopDesc::sc_mark_offset_in_bytes(), thread, T_ADDRESS);
+  }
+
+
   rawmem = make_store(control, rawmem, object, oopDesc::klass_offset_in_bytes(), klass_node, T_METADATA);
   int header_size = alloc->minimum_header_size();  // conservatively small
 
@@ -2430,6 +2440,59 @@ void PhaseMacroExpand::expand_unlock_node(UnlockNode *unlock) {
   _igvn.replace_node(_memproj_fallthrough, mem_phi);
 }
 
+//------------------------------expand_sc_node----------------------
+void PhaseMacroExpand::expand_sc_node(SCNode *sc) {
+
+  Node* ctrl = sc->in(TypeFunc::Control);
+  Node* mem = sc->in(TypeFunc::Memory);
+  Node* obj = sc->obj_node();
+  Node* check = sc->check_node();
+
+  // Make the merge point
+  Node *region;
+  Node *mem_phi;
+  Node *slow_path;
+
+  region  = new (C) RegionNode(3);
+  // create a Phi for the memory state
+  mem_phi = new (C) PhiNode( region, Type::MEMORY, TypeRawPtr::BOTTOM);
+
+  // Optimize test; set region slot 2
+  slow_path = opt_bits_test(ctrl, region, 2, check, 0, 0);
+  mem_phi->init_req(2, mem);
+
+  // Make slow path call
+  CallNode *call = make_slow_call( (CallNode *) sc, OptoRuntime::complete_sc_handling_Type(), OptoRuntime::complete_sc_handling_Java(), NULL, slow_path, obj, NULL );
+
+  extract_call_projections(call);
+
+  // Slow path can only throw asynchronous exceptions, which are always
+  // de-opted.  So the compiler thinks the slow-call can never throw an
+  // exception.  If it DOES throw an exception we would need the debug
+  // info removed first (since if it throws there is no monitor).
+  assert ( _ioproj_fallthrough == NULL && _ioproj_catchall == NULL &&
+           _memproj_catchall == NULL && _catchallcatchproj == NULL, "Unexpected projection from Lock");
+
+  // Capture slow path
+  // disconnect fall-through projection from call and create a new one
+  // hook up users of fall-through projection to region
+  Node *slow_ctrl = _fallthroughproj->clone();
+  transform_later(slow_ctrl);
+  _igvn.hash_delete(_fallthroughproj);
+  _fallthroughproj->disconnect_inputs(NULL, C);
+  region->init_req(1, slow_ctrl);
+  // region inputs are now complete
+  transform_later(region);
+  _igvn.replace_node(_fallthroughproj, region);
+
+  Node *memproj = transform_later( new(C) ProjNode(call, TypeFunc::Memory) );
+  mem_phi->init_req(1, memproj );
+  transform_later(mem_phi);
+  _igvn.replace_node(_memproj_fallthrough, mem_phi);
+}
+
+
+
 //---------------------------eliminate_macro_nodes----------------------
 // Eliminate scalar replaced allocations and associated locks.
 void PhaseMacroExpand::eliminate_macro_nodes() {
@@ -2481,6 +2544,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       case Node::Class_Unlock:
         assert(!n->as_AbstractLock()->is_eliminated(), "sanity");
         _has_locks = true;
+        break;
+      case Node::Class_SC:
         break;
       default:
         assert(n->Opcode() == Op_LoopLimit ||
@@ -2580,6 +2645,9 @@ bool PhaseMacroExpand::expand_macro_nodes() {
       break;
     case Node::Class_Unlock:
       expand_unlock_node(n->as_Unlock());
+      break;
+    case Node::Class_SC:
+      expand_sc_node(n->as_SC());
       break;
     default:
       assert(false, "unknown node type in macro list");

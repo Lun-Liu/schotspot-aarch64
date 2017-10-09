@@ -14873,6 +14873,23 @@ instruct cmpFastUnlock(rFlagsReg cr, iRegP object, iRegP box, iRegPNoSp tmp, iRe
   ins_pipe(pipe_serial);
 %}
 
+// ============================================================================
+// inlined sc checking 
+
+
+instruct cmpSCCheck(rFlagsReg cr, iRegP object, iRegP_R0 object2, iRegPNoSp tmp, iRegPNoSp scr) 
+%{
+  match(Set cr (SCCheck object object2));
+  effect(TEMP tmp, TEMP scr);
+  ins_cost(5 * INSN_COST);
+  format %{ "sc check $object,$object2\t! kills $tmp,$scr" %}
+  ins_encode %{
+    __ sc_check($object$$Register, $object2$$Register, $tmp$$Register,
+                 $scr$$Register, noreg, noreg);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 
 // ============================================================================
 // Safepoint Instructions

@@ -72,6 +72,15 @@ inline markOop oopDesc::cas_set_mark(markOop new_mark, markOop old_mark) {
   return (markOop) Atomic::cmpxchg_ptr(new_mark, &_mark, old_mark);
 }
 
+inline void oopDesc::release_set_sc_mark(scOop m) {
+  OrderAccess::release_store_ptr(&_sc_mark, m);
+}
+
+inline scOop oopDesc::cas_set_sc_mark(scOop new_mark, scOop old_mark) {
+  return (scOop) Atomic::cmpxchg_ptr(new_mark, &_sc_mark, old_mark);
+}
+
+
 inline Klass* oopDesc::klass() const {
   if (UseCompressedClassPointers) {
     return Klass::decode_klass_not_null(_metadata._compressed_klass);

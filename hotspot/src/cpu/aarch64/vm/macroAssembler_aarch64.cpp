@@ -400,6 +400,43 @@ void MacroAssembler::far_jump(Address entry, CodeBuffer *cbuf, Register tmp) {
   }
 }
 
+
+
+//ZFlag == 1, Succes
+//ZFlag == 0, Fail
+int MacroAssembler::biased_sc_enter( Register obj_reg,
+                                         Register swap_reg,
+                                         Register tmp_reg,
+                                         Label& done) {
+  //TODO: need to be finished
+  assert(swap_reg == r0, "swap_reg must be rax for cmpxchgq");
+  //bool need_tmp_reg = false;
+  assert_different_registers(obj_reg, swap_reg, tmp_reg);
+
+  Address mark_addr      (obj_reg, oopDesc::sc_mark_offset_in_bytes());
+  //Address mark_addr      (obj_reg, oopDesc::mark_offset_in_bytes());
+
+  // First check to see if thread id matches or not
+  int null_check_offset = offset();
+  ldr(swap_reg, mark_addr);
+
+  // Get the header ready
+  //load_sc_header(tmp_reg, obj_reg);
+  ldr(tmp_reg, rthread);
+  //print_state();
+
+  if(DynamicCheckOnly){
+    cmp(tmp_reg, tmp_reg);
+  }else{
+    cmp(tmp_reg, swap_reg);
+  }
+
+  return null_check_offset;
+  //return 0;
+}
+
+
+
 int MacroAssembler::biased_locking_enter(Register lock_reg,
                                          Register obj_reg,
                                          Register swap_reg,
@@ -574,6 +611,37 @@ void MacroAssembler::biased_locking_exit(Register obj_reg, Register temp_reg, La
   andr(temp_reg, temp_reg, markOopDesc::biased_lock_mask_in_place);
   cmp(temp_reg, markOopDesc::biased_lock_pattern);
   br(Assembler::EQ, done);
+}
+
+// SC Checking
+
+
+// obj: object to check
+// obj2: uncasted object
+// rax,: tmp -- KILLED
+// scr: tmp -- KILLED
+void MacroAssembler::sc_check(Register objReg, Register obj2Reg, Register tmpReg,
+                               Register scrReg, Register cx1Reg, Register cx2Reg
+                               ) {
+  // Ensure the register assignents are disjoint
+
+  assert_different_registers(objReg, obj2Reg, tmpReg, scrReg);
+
+  assert(cx1Reg == noreg, "");
+  assert(cx2Reg == noreg, "");
+  assert_different_registers(objReg, tmpReg, scrReg);
+
+  Label DONE_LABEL;
+
+  biased_sc_enter(objReg, tmpReg, scrReg, DONE_LABEL);
+
+  bind(DONE_LABEL);
+
+  // At DONE_LABEL the icc ZFlag is set as follows ...
+  // Fast_Unlock uses the same protocol.
+  // ZFlag == 1 -> Success
+  // ZFlag == 0 -> Failure - force control through the slow-path
+
 }
 
 
@@ -3164,6 +3232,13 @@ void MacroAssembler::store_check_part_2(Register obj) {
   load_byte_map_base(rscratch1);
   strb(zr, Address(obj, rscratch1));
 }
+
+
+void MacroAssembler::load_sc_header(Register dst, Register src) {
+  load_klass(dst, src);
+  mov(dst, Address(dst, Klass::sc_header_offset()));
+}
+
 
 void MacroAssembler::load_klass(Register dst, Register src) {
   if (UseCompressedClassPointers) {

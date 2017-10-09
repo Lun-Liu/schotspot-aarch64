@@ -129,6 +129,8 @@ class ProjNode;
 class RegMask;
 class RegionNode;
 class RootNode;
+class SCCheckNode;
+class SCNode;
 class SafePointNode;
 class SafePointScalarObjectNode;
 class StartNode;
@@ -570,6 +572,7 @@ public:
           DEFINE_CLASS_ID(AbstractLock,     Call, 3)
             DEFINE_CLASS_ID(Lock,             AbstractLock, 0)
             DEFINE_CLASS_ID(Unlock,           AbstractLock, 1)
+	  DEFINE_CLASS_ID(SC,               Call, 4)
       DEFINE_CLASS_ID(MultiBranch, Multi, 1)
         DEFINE_CLASS_ID(PCTable,     MultiBranch, 0)
           DEFINE_CLASS_ID(Catch,       PCTable, 0)
@@ -639,6 +642,7 @@ public:
       DEFINE_CLASS_ID(Cmp,   Sub, 0)
         DEFINE_CLASS_ID(FastLock,   Cmp, 0)
         DEFINE_CLASS_ID(FastUnlock, Cmp, 1)
+	DEFINE_CLASS_ID(SCCheck,    Cmp, 2)
 
     DEFINE_CLASS_ID(MergeMem, Node, 7)
     DEFINE_CLASS_ID(Bool,     Node, 8)
@@ -786,6 +790,8 @@ public:
   DEFINE_CLASS_QUERY(Proj)
   DEFINE_CLASS_QUERY(Region)
   DEFINE_CLASS_QUERY(Root)
+  DEFINE_CLASS_QUERY(SC)
+  DEFINE_CLASS_QUERY(SCCheck)
   DEFINE_CLASS_QUERY(SafePoint)
   DEFINE_CLASS_QUERY(SafePointScalarObject)
   DEFINE_CLASS_QUERY(Start)

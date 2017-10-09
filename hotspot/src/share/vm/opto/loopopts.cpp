@@ -810,7 +810,7 @@ void PhaseIdealLoop::split_if_with_blocks_post( Node *n ) {
 
   // Cloning Cmp through Phi's involves the split-if transform.
   // FastLock is not used by an If
-  if( n->is_Cmp() && !n->is_FastLock() ) {
+  if( n->is_Cmp() && !n->is_FastLock() && !n->is_SCCheck()) {
     if( C->unique() > 35000 ) return; // Method too big
 
     // Do not do 'split-if' if irreducible loops are present.

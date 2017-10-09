@@ -862,6 +862,11 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
   if (failing())  return;
   NOT_PRODUCT( verify_graph_edges(); )
 
+  if(!failing() && OptimizeSCDynamic){
+    PhaseRemoveSC();
+  }
+
+
   // Now optimize
   Optimize();
   if (failing())  return;

@@ -60,6 +60,7 @@ class oopDesc {
   friend class VMStructs;
  private:
   volatile markOop  _mark;
+  volatile scOop    _sc_mark;
   union _metadata {
     Klass*      _klass;
     narrowKlass _compressed_klass;
@@ -71,11 +72,16 @@ class oopDesc {
  public:
   markOop  mark() const         { return _mark; }
   markOop* mark_addr() const    { return (markOop*) &_mark; }
+  scOop    sc_mark() const      { return _sc_mark; }
+  scOop*   sc_mark_addr() const { return (scOop*) &_sc_mark; } 
 
   void set_mark(volatile markOop m)      { _mark = m;   }
 
   void    release_set_mark(markOop m);
   markOop cas_set_mark(markOop new_mark, markOop old_mark);
+
+  void    release_set_sc_mark(scOop m);
+  scOop cas_set_sc_mark(scOop new_mark, scOop old_mark);
 
   // Used only to re-initialize the mark word (e.g., of promoted
   // objects during a GC) -- requires a valid klass pointer
@@ -372,6 +378,7 @@ class oopDesc {
 
   // for code generation
   static int mark_offset_in_bytes()    { return offset_of(oopDesc, _mark); }
+  static int sc_mark_offset_in_bytes()    { return offset_of(oopDesc, _sc_mark); }
   static int klass_offset_in_bytes()   { return offset_of(oopDesc, _metadata._klass); }
   static int klass_gap_offset_in_bytes();
 };

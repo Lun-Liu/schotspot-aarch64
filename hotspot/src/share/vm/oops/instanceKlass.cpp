@@ -292,6 +292,7 @@ InstanceKlass::InstanceKlass(int vtable_len,
   set_nonstatic_field_size(0);
   set_is_marked_dependent(false);
   set_has_unloaded_dependent(false);
+  set_sc_state(sc_safe);
   set_init_state(InstanceKlass::allocated);
   set_init_thread(NULL);
   set_reference_type(rt);
@@ -1916,6 +1917,50 @@ int InstanceKlass::mark_dependent_nmethods(DepChange& changes) {
       found++;
     }
     b = b->next();
+  }
+  return found;
+}
+
+
+int InstanceKlass::mark_sc_dependent_nmethods(DepChange& changes) {
+  assert_locked_or_safepoint(CodeCache_lock);
+  int found = 0;
+  nmethodBucket* b = _dependencies;
+  while (b != NULL) {
+    nmethod* nm = b->get_nmethod();
+    // since dependencies aren't removed until an nmethod becomes a zombie,
+    // the dependency list may contain nmethods which aren't alive.
+    if (b->count() > 0 && nm->is_alive() && !nm->is_marked_for_deoptimization() && nm->check_dependency_on(changes)) {
+      if (TraceDependencies) {
+        ResourceMark rm;
+        tty->print_cr("Marked for deoptimization");
+        tty->print_cr("  context = %s", this->external_name());
+        changes.print();
+        nm->print();
+        nm->print_dependencies();
+      }
+      nm->mark_for_deoptimization();
+      //if(SCDynamic){
+          //nm->method()->method_holder()->set_is_sc_deoptimized(true);
+          //printf("[%p] Deoptimize own method %s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+          //printf("[%p] Set SC Deoptimized for class %s\n",Thread::current(), nm->method()->method_holder()->internal_name());
+          //nm->print();
+      //}
+      found++;
+    }
+    b = b->next();
+  }
+  if(SCDynamic){
+    int len = methods()->length();
+    for(int i = 0; i < len; i++){
+      Method* m = methods()->at(i);
+      nmethod* nm = m->code();
+      if((nm != NULL) && nm->is_alive() && !nm->is_marked_for_deoptimization()){
+        nm->mark_for_deoptimization();
+        //printf("[%p] Deoptimize own method %s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+        found++;
+      }
+    }
   }
   return found;
 }

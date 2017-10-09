@@ -1355,7 +1355,13 @@ JRT_ENTRY(void, Deoptimization::uncommon_trap_inner(JavaThread* thread, jint tra
     ScopeDesc*      trap_scope  = cvf->scope();
     methodHandle    trap_method = trap_scope->method();
     int             trap_bci    = trap_scope->bci();
-    Bytecodes::Code trap_bc     = trap_method->java_code_at(trap_bci);
+    //Bytecodes::Code trap_bc     = trap_method->java_code_at(trap_bci);
+    Bytecodes::Code trap_bc = Bytecodes::_illegal;
+    if(trap_bci == -1){
+      assert(reason == Deoptimization::Reason_sc_conflict, "Must be because of SC Dynamic");
+    }else{
+      trap_bc     = trap_method->java_code_at(trap_bci);
+    }
 
     // Record this event in the histogram.
     gather_statistics(reason, action, trap_bc);
@@ -1914,7 +1920,8 @@ const char* Deoptimization::_trap_reason_name[Reason_LIMIT] = {
   "loop_limit_check",
   "speculate_class_check",
   "rtm_state_change",
-  "unstable_if"
+  "unstable_if",
+  "sc conflict"
 };
 const char* Deoptimization::_trap_action_name[Action_LIMIT] = {
   // Note:  Keep this in sync. with enum DeoptAction.
