@@ -325,7 +325,7 @@ bool ConnectionGraph::compute_escape() {
       }
       if(my_mem != NULL && my_mem->is_Mem()){
         Node* addr = my_mem->as_Mem()->in(MemNode::Address);
-        addr->dump();
+        //addr->dump();
         PointsToNode* ptn = ptnode_adr(addr->_idx);
         if( ptn != NULL && ptn != phantom_obj){
           if((ptn->escape_state() == PointsToNode::NoEscape) || (ptn->escape_state() == PointsToNode::ArgEscape)){
