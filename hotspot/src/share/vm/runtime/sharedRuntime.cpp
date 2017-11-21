@@ -1854,7 +1854,7 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, JavaThread* thread))
-  printf("%s\n", "SC handling C");
+  //printf("%s\n", "SC handling C");
   oop obj(_obj);
   MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
@@ -1895,7 +1895,7 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, oopDesc* _obj, Method* m))
-  printf("%s\n", "SC handling runtime");
+  //printf("%s\n", "SC handling runtime");
   //printf("%s\n", m->name_and_sig_as_C_string());
   if(_obj->is_array()){
     return;
