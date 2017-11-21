@@ -1018,6 +1018,9 @@ private:
 
 //----------------- Printing, etc
 public:
+  //[SCVerify]
+  void scwalk(Unique_Node_List &visited, Unique_Node_List& protected_mem, Unique_Node_List& unsure);
+  void mark_following(Unique_Node_List &mark_visited, Unique_Node_List& protected_mem);
 #ifndef PRODUCT
   Node* find(int idx) const;         // Search the graph for the given idx.
   Node* find_ctrl(int idx) const;    // Search control ancestors for the given idx.

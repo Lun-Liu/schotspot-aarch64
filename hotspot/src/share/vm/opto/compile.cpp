@@ -862,6 +862,9 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
   if (failing())  return;
   NOT_PRODUCT( verify_graph_edges(); )
 
+  if(SCVerify)
+    Verify_SC();
+
   // Now optimize
   Optimize();
   if (failing())  return;
@@ -2091,6 +2094,90 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
   }
 
   set_inlining_incrementally(false);
+}
+
+
+void Compile::Verify_SC(){
+  Unique_Node_List nlist(comp_arena());
+  identify_useful_nodes(nlist);
+  bool flag = true;
+  for(uint i = 0; i < nlist.size(); i++){
+    Node* n = nlist.at(i);
+    if(n->is_Store()){
+      Node_Notes* nn = node_notes_at(n->_idx);
+      if(!nn || nn -> is_clear() || !nn->jvms()){
+        //printf("jvms() not found\n");
+        continue;
+      }
+      /*
+      JVMState* caller = nn->jvms();
+      ciMethod* last = NULL;
+      int lastbci = -1;
+      while(caller){
+        if(caller->has_method()){
+          lastbci = caller->bci();
+          last = caller->method();
+        }
+        caller = caller->caller();
+      }
+      Bytecodes::Code c = last->java_code_at_bci(lastbci);*/
+      JVMState* j = nn->jvms();
+      ciMethod* m = j->method();
+      int lastbci = j->bci();
+      Bytecodes::Code c = m->java_code_at_bci(lastbci);
+
+      switch(c){
+          case Bytecodes::_bastore:
+          case Bytecodes::_castore:
+          case Bytecodes::_iastore:
+          case Bytecodes::_sastore:
+          case Bytecodes::_fastore:
+          case Bytecodes::_aastore:
+          case Bytecodes::_lastore:
+          case Bytecodes::_dastore:
+          case Bytecodes::_putfield:
+          case Bytecodes::_putstatic:
+          case Bytecodes::_fast_aputfield:
+          case Bytecodes::_fast_bputfield:
+          case Bytecodes::_fast_cputfield:
+          case Bytecodes::_fast_dputfield:
+          case Bytecodes::_fast_fputfield:
+          case Bytecodes::_fast_iputfield:
+          case Bytecodes::_fast_lputfield:
+          case Bytecodes::_fast_sputfield:
+          {
+            Unique_Node_List visited(comp_arena());
+            Unique_Node_List protected_mem(comp_arena());
+            Unique_Node_List unsure(comp_arena());
+            visited.push(n);
+            int max = n->outcnt();
+            for(int i = 0; i < max; i++){
+              n->raw_out(i)->scwalk(visited, protected_mem, unsure);
+            }
+
+            for(uint i = 0; i < unsure.size(); i++){
+              Node* u = unsure.at(i);
+              if(!protected_mem.member(u)){
+                flag = false;
+                printf("MemAccess not protected by MemBar\n");
+              }
+            }
+            if(flag){
+              //printf("SCVerify PASSED for Store Node\n\n");
+            }else{
+              printf("SCVerify FAILED for Store Node\n\n");
+            }
+          }
+
+          break;
+
+          default:
+            //printf("Invalid Store at idx %d\n", n->_idx);
+            continue;
+
+      }
+    }
+  }
 }
 
 

@@ -121,6 +121,9 @@
   product(bool, SC, false,                                                  \
           "Force SC for code, treat every read and write as volatile, essentially equal to +SCInter, +SCComp")      \
                                                                             \
+  product(bool, SCVerify, false,                                                  \
+          "Veryfy SC implementation by traverse Ideal Graph")      \
+                                                                            \
   product(bool, SCInter, false,                                             \
           "Seperate flag for SC in inter mode.")                            \
                                                                             \
