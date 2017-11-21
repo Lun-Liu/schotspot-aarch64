@@ -625,7 +625,7 @@ void MacroAssembler::sc_check(Register objReg, Register obj2Reg, Register tmpReg
                                ) {
   // Ensure the register assignents are disjoint
 
-  assert_different_registers(objReg, obj2Reg, tmpReg, scrReg);
+  assert_different_registers(objReg, tmpReg, scrReg);
 
   assert(cx1Reg == noreg, "");
   assert(cx2Reg == noreg, "");

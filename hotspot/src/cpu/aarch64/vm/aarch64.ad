@@ -14877,7 +14877,7 @@ instruct cmpFastUnlock(rFlagsReg cr, iRegP object, iRegP box, iRegPNoSp tmp, iRe
 // inlined sc checking 
 
 
-instruct cmpSCCheck(rFlagsReg cr, iRegP object, iRegP_R0 object2, iRegPNoSp tmp, iRegPNoSp scr) 
+instruct cmpSCCheck(rFlagsReg cr, iRegP object, iRegP object2, iRegP_R0 tmp, iRegPNoSp scr) 
 %{
   match(Set cr (SCCheck object object2));
   effect(TEMP tmp, TEMP scr);
