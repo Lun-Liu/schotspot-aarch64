@@ -1854,7 +1854,7 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, JavaThread* thread))
-  //printf("%s\n", "SC handling C");
+  //printf("%s\n", "SC handling C [Compiler]");
   oop obj(_obj);
   MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
@@ -1895,7 +1895,7 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, oopDesc* _obj, Method* m))
-  //printf("%s\n", "SC handling runtime");
+  //printf("%s\n", "SC handling runtime [Interpreter]");
   //printf("%s\n", m->name_and_sig_as_C_string());
   if(_obj->is_array()){
     return;
@@ -1907,6 +1907,7 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
   if(ik->is_sc_deoptimized()){
     return;
   }
+  //printf("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p\n", Thread::current(), ik->internal_name(), thread, _obj->sc_mark()->owner_thread());
   ik->set_sc_deoptimized();
   Universe::flush_sc_dependents_on(ik);
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");

@@ -3672,6 +3672,32 @@ Compile::TracePhase::~TracePhase() {
   }
 }
 
+//------------------------------sc_method_skipped---------------------------
+bool Compile::sc_method_skipped() const {
+  if(SCSkipMethod[0] != '\0'){
+    const char* hname = C->method()->holder()->name()->as_quoted_ascii();
+    const char* mname = C->method()->name()->as_quoted_ascii();
+    const char* delim = "/";
+    char* name = (char*)calloc(strlen(hname) + strlen(delim) + strlen(mname) + 1, sizeof(char));
+    strcpy(name,hname);
+    strcat(name,delim);
+    strcat(name,mname);
+    //printf("To Comp %s, %s: ", name, SCSkipMethod);
+    if(strstr(SCSkipMethod, name) != NULL){
+      //printf("TRUE\n");
+      //printf("%s Skipped\n", name);
+      free(name);
+      return true;
+    }else{
+      //printf("FALSE\n");
+      free(name);
+      return false;
+    }
+  }else {
+    return false;
+  }
+}
+
 //=============================================================================
 // Two Constant's are equal when the type and the value are equal.
 bool Compile::Constant::operator==(const Constant& other) {

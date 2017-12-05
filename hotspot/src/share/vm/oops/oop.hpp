@@ -76,6 +76,7 @@ class oopDesc {
   scOop*   sc_mark_addr() const { return (scOop*) &_sc_mark; } 
 
   void set_mark(volatile markOop m)      { _mark = m;   }
+  void set_sc_mark(volatile scOop m)     { _sc_mark = m; }
 
   void    release_set_mark(markOop m);
   markOop cas_set_mark(markOop new_mark, markOop old_mark);

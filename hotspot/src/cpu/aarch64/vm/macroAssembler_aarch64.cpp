@@ -422,7 +422,7 @@ int MacroAssembler::biased_sc_enter( Register obj_reg,
 
   // Get the header ready
   //load_sc_header(tmp_reg, obj_reg);
-  ldr(tmp_reg, rthread);
+  mov(tmp_reg, rthread);
   //print_state();
 
   if(DynamicCheckOnly){

@@ -506,6 +506,7 @@ class Compile : public Phase {
   bool                  _in_scratch_emit_size;  // true when in scratch_emit_size.
 
  public:
+  bool sc_method_skipped() const;
   // Accessors
 
   // The Compile instance currently active in this (compiler) thread.
