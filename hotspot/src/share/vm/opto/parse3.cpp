@@ -199,7 +199,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
   ciType* field_klass = field->type();
   //[SC]: forcing volatile
   bool is_vol = true;
-  if (!SC && !SCComp)
+  if (!SC && !SCComp || C->sc_method_skipped())
   //if (C->sc_skipped() || !SC)
     is_vol = field->is_volatile();
 
@@ -288,7 +288,7 @@ void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field) {
   //[SC]: forcing volatile
   bool is_vol = true;
   //if (C->sc_skipped() || !SC)
-  if (!SC && !SCComp)
+  if (!SC && !SCComp || C->sc_method_skipped())
     is_vol = field->is_volatile();
   // If reference is volatile, prevent following memory ops from
   // floating down past the volatile write.  Also prevents commoning

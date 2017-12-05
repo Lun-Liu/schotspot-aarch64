@@ -45,7 +45,7 @@ extern int explicit_null_checks_inserted,
 
 //---------------------------------array_load----------------------------------
 void Parse::array_load(BasicType elem_type) {
-  bool is_vol = (SC || SCComp);
+  bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
   const Type* elem = Type::TOP;
   Node* adr = array_addressing(elem_type, 0, &elem);
   if (stopped())  return;     // guaranteed null or range check
@@ -61,7 +61,7 @@ void Parse::array_load(BasicType elem_type) {
 
 //--------------------------------array_store----------------------------------
 void Parse::array_store(BasicType elem_type) {
-  bool is_vol = (SC || SCComp);
+  bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
   const Type* elem = Type::TOP;
   Node* adr = array_addressing(elem_type, 1, &elem);
   if (stopped())  return;     // guaranteed null or range check
@@ -1710,7 +1710,7 @@ void Parse::do_one_bytecode() {
   case Bytecodes::_faload: array_load(T_FLOAT);  break;
   case Bytecodes::_aaload: array_load(T_OBJECT); break;
   case Bytecodes::_laload: {
-    bool is_vol = (SC || SCComp);
+    bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
     a = array_addressing(T_LONG, 0);
     if (stopped())  return;     // guaranteed null or range check
     dec_sp(2);                  // Pop array and index
@@ -1722,7 +1722,7 @@ void Parse::do_one_bytecode() {
     break;
   }
   case Bytecodes::_daload: {
-    bool is_vol = (SC || SCComp);
+    bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
     a = array_addressing(T_DOUBLE, 0);
     if (stopped())  return;     // guaranteed null or range check
     dec_sp(2);                  // Pop array and index
@@ -1745,7 +1745,7 @@ void Parse::do_one_bytecode() {
     c = pop();                  // Oop to store
     b = pop();                  // index (already used)
     a = pop();                  // the array itself
-    bool is_vol = (SC || SCComp);
+    bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
     if(is_vol)
       insert_mem_bar(Op_MemBarRelease);
     const TypeOopPtr* elemtype  = _gvn.type(a)->is_aryptr()->elem()->make_oopptr();
@@ -1760,7 +1760,7 @@ void Parse::do_one_bytecode() {
     if (stopped())  return;     // guaranteed null or range check
     c = pop_pair();
     dec_sp(2);                  // Pop array and index
-    bool is_vol = (SC || SCComp);
+    bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
     if(is_vol)
       insert_mem_bar(Op_MemBarRelease);
     MemNode::MemOrd mo = is_vol ? MemNode::release : MemNode::unordered;
@@ -1775,7 +1775,7 @@ void Parse::do_one_bytecode() {
     c = pop_pair();
     dec_sp(2);                  // Pop array and index
     c = dstore_rounding(c);
-    bool is_vol = (SC || SCComp);
+    bool is_vol = (SC || SCComp) && !C->sc_method_skipped();
     if(is_vol)
       insert_mem_bar(Op_MemBarRelease);
     MemNode::MemOrd mo = is_vol ? MemNode::release : MemNode::unordered;

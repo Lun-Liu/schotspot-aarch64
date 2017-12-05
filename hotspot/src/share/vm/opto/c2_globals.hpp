@@ -129,6 +129,8 @@
                                                                             \
   product(bool, SCComp, false,                                              \
           "Seperate flag for SC in compiler mode.")                         \
+  product(ccstrlist, SCSkipMethod, "",                                               \
+          "skip inserting fences for certain method, specified by format class::method, class::method,...")      \
                                                                             \
   product(bool, AggresiveMemBar, false,                                     \
           "optimize membar for scalar repeacable objects.")                 \
