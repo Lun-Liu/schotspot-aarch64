@@ -678,8 +678,6 @@ void TemplateTable::iaload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1, Address(r0, r1, Address::uxtw(2)));
   __ ldrw(r0, Address(r1, arrayOopDesc::base_offset_in_bytes(T_INT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::laload()
@@ -692,8 +690,6 @@ void TemplateTable::laload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1, Address(r0, r1, Address::uxtw(3)));
   __ ldr(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_LONG)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::faload()
@@ -706,8 +702,6 @@ void TemplateTable::faload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(2)));
   __ ldrs(v0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::daload()
@@ -720,8 +714,6 @@ void TemplateTable::daload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(3)));
   __ ldrd(v0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::aaload()
@@ -735,8 +727,6 @@ void TemplateTable::aaload()
   int s = (UseCompressedOops ? 2 : 3);
   __ lea(r1, Address(r0, r1, Address::uxtw(s)));
   __ load_heap_oop(r0, Address(r1, arrayOopDesc::base_offset_in_bytes(T_OBJECT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::baload()
@@ -749,8 +739,6 @@ void TemplateTable::baload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(0)));
   __ load_signed_byte(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_BYTE)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::caload()
@@ -763,8 +751,6 @@ void TemplateTable::caload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_unsigned_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 // iload followed by caload frequent pair
@@ -782,8 +768,6 @@ void TemplateTable::fast_icaload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_unsigned_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::saload()
@@ -796,8 +780,6 @@ void TemplateTable::saload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_signed_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_SHORT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
 void TemplateTable::iload(int n)
@@ -979,8 +961,6 @@ void TemplateTable::wide_astore() {
 
 void TemplateTable::iastore() {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -990,14 +970,10 @@ void TemplateTable::iastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strw(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_INT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::lastore() {
   transition(ltos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1007,14 +983,10 @@ void TemplateTable::lastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ str(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_LONG)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::fastore() {
   transition(ftos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1024,14 +996,10 @@ void TemplateTable::fastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strs(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::dastore() {
   transition(dtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1041,15 +1009,11 @@ void TemplateTable::dastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ strd(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   // stack: ..., array, index, value
   __ ldr(r0, at_tos());    // value
   __ ldr(r2, at_tos_p1()); // index
@@ -1098,15 +1062,11 @@ void TemplateTable::aastore() {
   // Pop stack arguments
   __ bind(done);
   __ add(esp, esp, 3 * Interpreter::stackElementSize);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::bastore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1128,15 +1088,11 @@ void TemplateTable::bastore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(0)));
   __ strb(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_BYTE)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::castore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1146,8 +1102,6 @@ void TemplateTable::castore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(1)));
   __ strh(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::sastore()
