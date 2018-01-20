@@ -74,7 +74,6 @@ void Parse::array_store(BasicType elem_type) {
     elem_type = T_BOOLEAN;
   }
   const MemNode::MemOrd mo = is_vol ? MemNode::release : StoreNode::release_if_reference(elem_type);
-  store_to_memory(control(), adr, val, elem_type, adr_type, StoreNode::release_if_reference(elem_type));
   Node* store = store_to_memory(control(), adr, val, elem_type, adr_type, mo, is_vol);
   if(is_vol)
     insert_mem_bar(Op_MemBarVolatile, store);
@@ -1727,7 +1726,7 @@ void Parse::do_one_bytecode() {
     if (stopped())  return;     // guaranteed null or range check
     dec_sp(2);                  // Pop array and index
     MemNode::MemOrd mo = is_vol ? MemNode::acquire : MemNode::unordered;
-    Node* ld = make_load(control(), a, TypeLong::LONG, T_LONG, TypeAryPtr::LONGS, mo, LoadNode::DependsOnlyOnTest, is_vol);
+    Node* ld = make_load(control(), a, TypeLong::DOUBLE, T_DOUBLE, TypeAryPtr::DOUBLES, mo, LoadNode::DependsOnlyOnTest, is_vol);
     push_pair(ld);
     if(is_vol)
       insert_mem_bar(Op_MemBarAcquire, ld);
