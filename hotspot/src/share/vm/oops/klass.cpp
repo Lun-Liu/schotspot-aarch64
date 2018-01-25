@@ -186,7 +186,6 @@ Klass::Klass() {
   set_next_link(NULL);
   TRACE_INIT_ID(this);
 
-  set_sc_header(scOopDesc::prototype());
   set_prototype_header(markOopDesc::prototype());
   set_biased_lock_revocation_count(0);
   set_last_biased_lock_bulk_revocation_time(0);

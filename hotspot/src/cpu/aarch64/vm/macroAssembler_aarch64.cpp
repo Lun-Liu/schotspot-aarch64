@@ -414,16 +414,12 @@ int MacroAssembler::biased_sc_enter( Register obj_reg,
   assert_different_registers(obj_reg, swap_reg, tmp_reg);
 
   Address mark_addr      (obj_reg, oopDesc::sc_mark_offset_in_bytes());
-  //Address mark_addr      (obj_reg, oopDesc::mark_offset_in_bytes());
 
   // First check to see if thread id matches or not
   int null_check_offset = offset();
   ldr(swap_reg, mark_addr);
 
-  // Get the header ready
-  //load_sc_header(tmp_reg, obj_reg);
   mov(tmp_reg, rthread);
-  //print_state();
 
   if(DynamicCheckOnly){
     cmp(tmp_reg, tmp_reg);
@@ -3233,11 +3229,6 @@ void MacroAssembler::store_check_part_2(Register obj) {
   strb(zr, Address(obj, rscratch1));
 }
 
-
-void MacroAssembler::load_sc_header(Register dst, Register src) {
-  load_klass(dst, src);
-  mov(dst, Address(dst, Klass::sc_header_offset()));
-}
 
 
 void MacroAssembler::load_klass(Register dst, Register src) {

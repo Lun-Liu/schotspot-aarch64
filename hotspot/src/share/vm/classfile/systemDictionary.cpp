@@ -2070,8 +2070,9 @@ void SystemDictionary::update_dictionary(int d_index, unsigned int d_hash,
   }
 
   if(SCDynamic){
-    if(k->class_loader() == class_loader()){
-      k -> set_sc_header(scOopDesc::prototype());
+    if(k->class_loader() == class_loader() ){
+      assert(k->oop_is_instance(), "must be instance klass");
+      k -> set_sc_safe();
     }
   }
 

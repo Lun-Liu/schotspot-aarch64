@@ -810,7 +810,6 @@ public:
   // stored using routines that take a jobject.
   void store_heap_oop_null(Address dst);
 
-  void load_sc_header(Register dst, Register src);
   void load_prototype_header(Register dst, Register src);
 
   void store_klass_gap(Register dst, Register src);

@@ -494,6 +494,7 @@ class InstanceKlass: public Klass {
   //bool is_sc_deoptimized() const         { return (_sc_state != sc_safe); }
 private:
   void set_sc_state(SCState state)         { _sc_state = state;}
+  void set_sc_safe()                       { _sc_state = sc_safe; }
 public:
   static int sc_safe_const()            { return sc_safe;}
   SCState get_sc_state() const             { return (SCState)_sc_state;}
