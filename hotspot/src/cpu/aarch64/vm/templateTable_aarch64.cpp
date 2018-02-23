@@ -2671,8 +2671,8 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
 
 void TemplateTable::check_sc_conflict_get(Register obj) {
     //direct field access
-    __ push_ptr(obj); //saves value in case call_VM changes value
     __ push_ptr(r0);
+    __ push_ptr(obj); //saves value in case call_VM changes value
     Label exec;
     // not static method
     // get receiver (this pointer)
@@ -2684,24 +2684,24 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
     __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
     __ br(Assembler::NE, exec);
     // scSafe here, get curthread and compare
-    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    __ mov(r0, obj);
     Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
     __ ldr(r0, mark_addr);
     __ cmp(r0, rthread);
     //__ cmp(r0, r0);
     __ br(Assembler::EQ, exec);
-    //// TODO: Deopt here
-    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
-    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp), r0, rmethod);
+    //Deopt here
+    __ mov(r0, obj);
+    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp_direct), r0);
 
     __ bind(exec);
-    __ pop_ptr(r0);
     __ pop_ptr(obj);
+    __ pop_ptr(r0);
 }
 
 void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
+	return;
     //direct field access
-    __ push_ptr(obj); //saves value in case call_VM changes value
     switch (tos) {          // load values into the jvalue object
     case atos: __ push_ptr(r0); break;
     case btos: // fall through
@@ -2716,6 +2716,7 @@ void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
     default:
       ShouldNotReachHere();
     }
+    __ push_ptr(obj); //saves value in case call_VM changes value
     Label exec;
     // not static method
     // get receiver (this pointer)
@@ -2727,17 +2728,19 @@ void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
     __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
     __ br(Assembler::NE, exec);
     // scSafe here, get curthread and compare
-    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    __ mov(r0, obj);
     Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
     __ ldr(r0, mark_addr);
     __ cmp(r0, rthread);
     //__ cmp(r0, r0);
     __ br(Assembler::EQ, exec);
-    //// TODO: Deopt here
-    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
-    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp), r0, rmethod);
+    // Deopt here
+    __ mov(r0, obj);
+    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp_direct), r0);
 
     __ bind(exec);
+
+    __ pop_ptr(obj);
     switch (tos) {          // load values into the jvalue object
     case atos: __ pop_ptr(r0); break;
     case btos: // fall through
@@ -2752,7 +2755,6 @@ void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
     default:
       ShouldNotReachHere();
     }
-    __ pop_ptr(obj);
 }
 
 void TemplateTable::putfield_or_static(int byte_no, bool is_static, bool rewrite) {
