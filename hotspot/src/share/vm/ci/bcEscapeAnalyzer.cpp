@@ -1480,6 +1480,7 @@ void BCEscapeAnalyzer::copy_dependencies(Dependencies *deps) {
     // callee will trigger recompilation.
     deps->assert_evol_method(method());
   }
+  deps->assert_evol_klass(method()->holder());
   for (int i = 0; i < _dependencies.length(); i+=2) {
     ciKlass *k = _dependencies.at(i)->as_klass();
     ciMethod *m = _dependencies.at(i+1)->as_method();

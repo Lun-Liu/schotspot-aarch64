@@ -748,6 +748,8 @@ public:
   // this compiled method will have to be deoptimized.
   bool is_evol_dependent_on(Klass* dependee);
 
+  bool is_dependent_on_klass(Klass* dependee);
+
   // Fast breakpoint support. Tells if this compiled method is
   // dependent on the given method. Returns true if this nmethod
   // corresponds to the given method as well.

@@ -2594,6 +2594,19 @@ bool nmethod::is_evol_dependent_on(Klass* dependee) {
   return false;
 }
 
+bool nmethod::is_dependent_on_klass(Klass* dependee) {
+  InstanceKlass *dependee_ik = InstanceKlass::cast(dependee);
+  for (Dependencies::DepStream deps(this); deps.next(); ) {
+    if (deps.type() == Dependencies::evol_klass) {
+      InstanceKlass* k = InstanceKlass::cast(deps.type_argument(0));
+      if(dependee_ik == k){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Called from mark_for_deoptimization, when dependee is invalidated.
 bool nmethod::is_dependent_on_method(Method* dependee) {
   for (Dependencies::DepStream deps(this); deps.next(); ) {

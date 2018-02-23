@@ -29,6 +29,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "opto/addnode.hpp"
 #include "opto/memnode.hpp"
+#include "opto/scnode.hpp"
 #include "opto/parse.hpp"
 #include "opto/rootnode.hpp"
 #include "opto/runtime.hpp"
@@ -76,7 +77,7 @@ bool Parse::static_field_ok_in_clinit(ciField *field, ciMethod *method) {
 }
 
 
-void Parse::do_field_access(bool is_get, bool is_field) {
+void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
   bool will_link;
   ciField* field = iter().get_field(will_link);
   assert(will_link, "getfield: typeflow responsibility");
@@ -126,25 +127,66 @@ void Parse::do_field_access(bool is_get, bool is_field) {
 #endif
 
     if (is_get) {
+      bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
+      if(is_direct && is_field_holder_sc_safe){
+        //receiver obj
+        check_sc_conflict(obj);
+      }
       (void) pop();  // pop receiver before getting
-      do_get_xxx(obj, field, is_field);
+      do_get_xxx(obj, field, is_field, is_direct);
     } else {
-      do_put_xxx(obj, field, is_field);
+      bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
+      if(is_direct && is_field_holder_sc_safe){
+        //receiver obj
+        check_sc_conflict(obj);
+      }
+      do_put_xxx(obj, field, is_field, is_direct);
       (void) pop();  // pop receiver after putting
     }
   } else {
     const TypeInstPtr* tip = TypeInstPtr::make(field_holder->java_mirror());
     obj = _gvn.makecon(tip);
     if (is_get) {
-      do_get_xxx(obj, field, is_field);
+      do_get_xxx(obj, field, is_field, is_direct);
     } else {
-      do_put_xxx(obj, field, is_field);
+      do_put_xxx(obj, field, is_field, is_direct);
     }
   }
 }
 
+void Parse::check_sc_conflict(Node* obj){
+  kill_dead_locals();
+  Node* mem = reset_memory();
+  Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), obj));
+ 
+  const TypeFunc *tf = SCNode::sc_type();
+  SCNode * sc = new (C) SCNode(C, tf);
+ 
+  sc->init_req( TypeFunc::Control, control() );
+  sc->init_req( TypeFunc::Memory , mem );
+  sc->init_req( TypeFunc::I_O    , top() )     ;   // does no i/o
+  sc->init_req( TypeFunc::FramePtr, frameptr() );
+  sc->init_req( TypeFunc::ReturnAdr, top() );
+ 
+  sc->init_req(TypeFunc::Parms + 0, obj);
+  sc->init_req(TypeFunc::Parms + 1, sc_check);
+ 
+  add_safepoint_edges(sc);
+ 
+  sc = _gvn.transform( sc )->as_SC();
+ 
+  // lock has no side-effects, sets few values
+  set_predefined_output_for_runtime_call(sc, mem, TypeRawPtr::BOTTOM);
+ 
+  insert_mem_bar(Op_MemBarAcquireLock);
+ 
+  // Add this to the worklist so that the lock can be eliminated
+  record_for_igvn(sc);
+  C->dependencies()->assert_evol_klass(method()->holder());
+}
 
-void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
+
+void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct) {
   // Does this field have a constant value?  If so, just push the value.
   if (field->is_constant()) {
     // final or stable field
@@ -197,10 +239,20 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
   }
 
   ciType* field_klass = field->type();
-  //[SC]: forcing volatile
+
   bool is_vol = true;
-  if ((SCDynamic && is_field && method()->holder()->is_sc_safe())|| (!SC && !SCComp) || C->sc_method_skipped() )
-    is_vol = field->is_volatile();
+  bool is_method_sc_safe = method()->holder()->is_sc_safe();
+  bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
+
+  if(SCDynamic && is_field){
+    if(!is_direct && is_method_sc_safe || is_direct && is_field_holder_sc_safe)
+      is_vol = field -> is_volatile();
+  }
+
+  if((!SC && !SCComp) || C-> sc_method_skipped() )
+    is_vol = field -> is_volatile();
+
+
 
   // Compute address and memory type.
   int offset = field->offset_in_bytes();
@@ -282,12 +334,19 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
   }
 }
 
-void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field) {
+void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct) {
 
-  //[SC]: forcing volatile
   bool is_vol = true;
-  if ((SCDynamic && is_field && method()->holder()->is_sc_safe())|| (!SC && !SCComp) || C->sc_method_skipped() )
-    is_vol = field->is_volatile();
+  bool is_method_sc_safe = method()->holder()->is_sc_safe();
+  bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
+  //[SC]: forcing volatile
+  if(SCDynamic && is_field){
+    if(!is_direct && is_method_sc_safe || is_direct && is_field_holder_sc_safe)
+      is_vol = field -> is_volatile();
+  }
+
+  if((!SC && !SCComp) || C-> sc_method_skipped() )
+    is_vol = field -> is_volatile();
   // If reference is volatile, prevent following memory ops from
   // floating down past the volatile write.  Also prevents commoning
   // another volatile read.

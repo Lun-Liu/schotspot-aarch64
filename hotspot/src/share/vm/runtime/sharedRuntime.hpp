@@ -503,6 +503,7 @@ class SharedRuntime: AllStatic {
 
   // Force SC deopt from interpreter
   static void SC_handling_Interp(JavaThread* thread, oopDesc* obj, Method* m);
+  static void SC_handling_Interp_direct(JavaThread* thread, oopDesc* obj);
 
 
   // Resolving of calls

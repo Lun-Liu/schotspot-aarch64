@@ -23,7 +23,7 @@ class SCCheckNode: public CmpNode {
 private:
 
 public:
-  SCCheckNode(Node* ctrl, Node *oop1, Node *oop2) : CmpNode(oop1,oop2) {
+  SCCheckNode(Node* ctrl, Node *oop1) : CmpNode(oop1,oop1) {
     init_req(0, ctrl);
     init_class_id(Class_SCCheck);
   }

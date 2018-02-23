@@ -63,6 +63,7 @@
 #include "services/threadService.hpp"
 #include "utilities/dtrace.hpp"
 #include "utilities/macros.hpp"
+#include "classfile/refVerifier.hpp"
 #if INCLUDE_ALL_GCS
 #include "gc_implementation/concurrentMarkSweep/cmsOopClosures.inline.hpp"
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
@@ -704,6 +705,13 @@ bool InstanceKlass::link_class_impl(
         // using custom class loaders, which are free to initialize things)
         if (this_oop->is_linked()) {
           return true;
+        }
+
+        //SC Dynamic: bare field access detection
+        {
+          ResourceMark rm;
+          RefVerifier ref_verifier(this_oop);
+          ref_verifier.verify_class();
         }
 
         // also sets rewritten

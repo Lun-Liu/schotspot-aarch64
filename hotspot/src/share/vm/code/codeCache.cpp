@@ -656,7 +656,8 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
         InstanceKlass::cast(d)->set_sc_deoptimized();
       //  d->print();
       }
-      number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
+      //number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
+      number_of_marked_CodeBlobs += mark_for_sc_deoptimization(InstanceKlass::cast(d));
     }
   }
 
@@ -683,7 +684,7 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
 }
 
 int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
-  MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+  //MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
 
 #ifndef PRODUCT
   dependentCheckTime.start();
@@ -705,7 +706,7 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
     nmethod *nm = old_method->code();
     if (nm != NULL) {
       nm->mark_for_deoptimization();
-      printf("[%p] Deoptimize own method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+      //printf("[%p] Deoptimize own method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
       number_of_marked_CodeBlobs++;
     }
   }
@@ -713,10 +714,10 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
   FOR_ALL_ALIVE_NMETHODS(nm) {
     if (nm->is_marked_for_deoptimization()) {
       // ...Already marked in the previous pass; don't count it again.
-    } else if (nm->is_evol_dependent_on(dependee())) {
+    } else if (nm->is_dependent_on_klass(dependee())) {
       ResourceMark rm;
       nm->mark_for_deoptimization();
-      printf("[%p] Deoptimize dependent method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
+      //printf("[%p] Deoptimize dependent method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
       number_of_marked_CodeBlobs++;
     } else  {
       // flush caches in case they refer to a redefined Method*

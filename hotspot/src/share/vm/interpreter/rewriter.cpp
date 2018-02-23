@@ -400,6 +400,8 @@ void Rewriter::scan_method(Method* method, bool reverse, bool* invokespecial_err
         case Bytecodes::_putstatic      : // fall through
         case Bytecodes::_getfield       : // fall through
         case Bytecodes::_putfield       : // fall through
+        case Bytecodes::_direct_getfield:
+        case Bytecodes::_direct_putfield:
         case Bytecodes::_invokevirtual  : // fall through
         case Bytecodes::_invokestatic   :
         case Bytecodes::_invokeinterface:

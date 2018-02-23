@@ -294,10 +294,12 @@ class TemplateTable: AllStatic {
   static void invokehandle(int byte_no);
   static void fast_invokevfinal(int byte_no);
 
-  static void getfield_or_static(int byte_no, bool is_static);
-  static void putfield_or_static(int byte_no, bool is_static);
+  static void getfield_or_static(int byte_no, bool is_static, bool rewrite);
+  static void putfield_or_static(int byte_no, bool is_static, bool rewrite);
   static void getfield(int byte_no);
   static void putfield(int byte_no);
+  static void getfield_direct(int byte_no);
+  static void putfield_direct(int byte_no);
   static void getstatic(int byte_no);
   static void putstatic(int byte_no);
   static void pop_and_check_object(Register obj);
@@ -330,6 +332,8 @@ class TemplateTable: AllStatic {
   static void jvmti_post_field_mod(Register cache, Register index, bool is_static);
   static void jvmti_post_fast_field_mod();
 
+  static void check_sc_conflict_get(Register obj);
+  static void check_sc_conflict_put(Register obj, TosState tos);
   // debugging of TemplateGenerator
   static void transition(TosState tos_in, TosState tos_out);// checks if in/out states expected by template generator correspond to table entries
 

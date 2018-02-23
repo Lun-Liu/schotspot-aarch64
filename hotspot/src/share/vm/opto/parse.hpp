@@ -520,18 +520,19 @@ class Parse : public GraphKit {
   void do_irem();
 
   // implementation of _get* and _put* bytecodes
-  void do_getstatic() { do_field_access(true,  false); }
-  void do_getfield () { do_field_access(true,  true); }
-  void do_putstatic() { do_field_access(false, false); }
-  void do_putfield () { do_field_access(false, true); }
+  void do_getstatic() { do_field_access(true,  false, false); }
+  void do_getfield (bool direct) { do_field_access(true,  true, direct); }
+  void do_putstatic() { do_field_access(false, false, false); }
+  void do_putfield (bool direct) { do_field_access(false, true, direct); }
 
   // common code for making initial checks and forming addresses
-  void do_field_access(bool is_get, bool is_field);
+  void do_field_access(bool is_get, bool is_field, bool is_direct);
   bool static_field_ok_in_clinit(ciField *field, ciMethod *method);
 
   // common code for actually performing the load or store
-  void do_get_xxx(Node* obj, ciField* field, bool is_field);
-  void do_put_xxx(Node* obj, ciField* field, bool is_field);
+  void do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct);
+  void do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct);
+  void check_sc_conflict(Node* obj);
 
   // loading from a constant field or the constant pool
   // returns false if push failed (non-perm field constants only, not ldcs)

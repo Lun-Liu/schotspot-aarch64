@@ -1913,6 +1913,28 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
 JRT_END
 
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* thread, oopDesc* _obj))
+  //printf("%s\n", m->name_and_sig_as_C_string());
+  assert(_obj, "must have obj");
+  assert(_obj -> is_oop(), "must be a valid oop");
+  if(_obj->is_array()){
+    return;
+  }
+  oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
+  Klass* k = obj->klass();
+  assert(k && k->is_klass(), "must be a valid klass");
+  assert(k->oop_is_instance(), "must be a valid instanceklass");
+  instanceKlassHandle ik(thread,k);
+  if(ik->is_sc_deoptimized()){
+    return;
+  }
+  ik->set_sc_deoptimized();
+  Universe::flush_sc_dependents_on(ik);
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
 
 
 // Handles the uncommon case in locking, i.e., contention or an inflated lock.

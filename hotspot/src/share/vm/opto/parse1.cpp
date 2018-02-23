@@ -487,6 +487,7 @@ Parse::Parse(JVMState* caller, ciMethod* parse_method, float expected_uses)
   if (C->env()->jvmti_can_hotswap_or_post_breakpoint()) {
     C->dependencies()->assert_evol_method(method());
   }
+  C->dependencies()->assert_evol_klass(method() -> holder());
 
   methods_seen++;
 
@@ -1191,11 +1192,11 @@ void Parse::do_method_entry() {
       lock_obj = local(0);
       //
       bool need_check = true;
-      Node* uncasted_lock_obj = lock_obj->uncast();
+      //Node* uncasted_lock_obj = lock_obj->uncast();
       if(need_check){
         kill_dead_locals();
         Node* mem = reset_memory();
-        Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), lock_obj, uncasted_lock_obj)); 
+        Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), lock_obj));
 
         const TypeFunc *tf = SCNode::sc_type();
         SCNode * sc = new (C) SCNode(C, tf);

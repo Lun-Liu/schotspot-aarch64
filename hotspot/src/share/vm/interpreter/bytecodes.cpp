@@ -538,6 +538,9 @@ void Bytecodes::initialize() {
 
   def(_return_register_finalizer , "return_register_finalizer" , "b"    , NULL    , T_VOID   ,  0, true, _return);
 
+  def(_direct_getfield            , "direct_getfield"            , "bJJ"  , NULL    , T_ILLEGAL,  0, true, _getfield );
+  def(_direct_putfield            , "direct_putfield"            , "bJJ"  , NULL    , T_ILLEGAL, -2, true, _putfield );
+
   def(_invokehandle        , "invokehandle"        , "bJJ"  , NULL    , T_ILLEGAL, -1, true, _invokevirtual   );
 
   def(_fast_aldc           , "fast_aldc"           , "bj"   , NULL    , T_OBJECT,   1, true,  _ldc   );
