@@ -631,7 +631,14 @@ static int dependentCheckCount = 0;
 
 
 int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("acquiring mutex CodeCache_lock...");
+#endif
   MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+#ifndef PRODUCT
+  tty->print_cr("acquired mutex CodeCache_lock...");
+#endif
 
 #ifndef PRODUCT
   dependentCheckTime.start();
@@ -646,8 +653,8 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
   // which might be dependent of the fact that an interface only had one
   // implementor.
 
-  { No_Safepoint_Verifier nsv;
-    for (DepChange::ContextStream str(changes, nsv); str.next(); ) {
+  { //No_Safepoint_Verifier nsv;
+    for (DepChange::ContextStream str(changes); str.next(); ) {
       Klass* d = str.klass();
       if(SCDynamic){
         //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
@@ -715,13 +722,13 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
     if (nm->is_marked_for_deoptimization()) {
       // ...Already marked in the previous pass; don't count it again.
     } else if (nm->is_dependent_on_klass(dependee())) {
-      ResourceMark rm;
+      //ResourceMark rm;
       nm->mark_for_deoptimization();
       //printf("[%p] Deoptimize dependent method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
       number_of_marked_CodeBlobs++;
     } else  {
       // flush caches in case they refer to a redefined Method*
-      //nm->clear_inline_caches();
+      nm->clear_inline_caches();
     }
   }
 

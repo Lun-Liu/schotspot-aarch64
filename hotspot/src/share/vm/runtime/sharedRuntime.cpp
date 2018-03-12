@@ -1859,79 +1859,61 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, Ja
   MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
-  //if(!ik->set_sc_deoptimizing()){
-  //  printf("[%p] SC Deopt entered later by %s, JavaThread %p\n", Thread::current(), ik->internal_name(), thread);
-  //  while(true){
-  //    if(ik->is_sc_deoptimized())
-  //      break;
-  //    printf("WAITTTT\n");
-  //  }
-  //  return;
-  //}
   if(ik->is_sc_deoptimized()){
-    //printf("[%p] SC Deopt entered later by %s, JavaThread %p\n", Thread::current(), ik->internal_name(), thread);
-    //NOTE: It's OK to return immediately. Because we are holding Compile_lock
-    // when entering this runtime method, this means no two sc_handling_C can happen
-    // concurrently, so the previous deoptimizaiton must already finished.
     return;
   }
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p", Thread::current(), ik->internal_name(), thread, obj->sc_mark()->owner_thread());
+#endif
   ik->set_sc_deoptimized();
-  //printf("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p\n", Thread::current(), ik->internal_name(), thread, obj->sc_mark()->owner_thread());
-  Universe::flush_sc_dependents_on(ik);
-  //ik->set_sc_deoptimized();
-  //CodeCache::mark_all_nmethods_for_deoptimization();
-  //VM_Deoptimize op;
-  //VMThread::execute(&op);
-  //Handle h_obj(THREAD, obj);
-  //printf("SC Handling %s, %d. \n", ik->internal_name(), ik->is_sc_deoptimized());
-  //printf("SC HANDLING: ");
-  //obj->print();
-  //printf("\n");
-  //thread -> print();
-  //JavaThread* master_thread = obj -> sc_mark()-> owner_thread();
-  //master_thread->print();
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
 JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, oopDesc* _obj, Method* m))
-  //printf("%s\n", "SC handling runtime [Interpreter]");
-  //printf("%s\n", m->name_and_sig_as_C_string());
   if(_obj->is_array()){
     return;
   }
-  oop obj(_obj);
   MutexLocker mu(Compile_lock, thread);
+  oop obj(_obj);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
   if(ik->is_sc_deoptimized()){
     return;
   }
-  //printf("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p\n", Thread::current(), ik->internal_name(), thread, _obj->sc_mark()->owner_thread());
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp triggered by method %s", Thread::current(), m->name_and_sig_as_C_string());
+#endif
   ik->set_sc_deoptimized();
-  Universe::flush_sc_dependents_on(ik);
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
 JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* thread, oopDesc* _obj))
   //printf("%s\n", m->name_and_sig_as_C_string());
-  assert(_obj, "must have obj");
-  assert(_obj -> is_oop(), "must be a valid oop");
   if(_obj->is_array()){
     return;
   }
-  oop obj(_obj);
   MutexLocker mu(Compile_lock, thread);
+  oop obj(_obj);
   Klass* k = obj->klass();
-  assert(k && k->is_klass(), "must be a valid klass");
-  assert(k->oop_is_instance(), "must be a valid instanceklass");
   instanceKlassHandle ik(thread,k);
   if(ik->is_sc_deoptimized()){
     return;
   }
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp direct triggered on klass %s", Thread::current(), k->internal_name());
+#endif
   ik->set_sc_deoptimized();
-  Universe::flush_sc_dependents_on(ik);
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
 JRT_END
 

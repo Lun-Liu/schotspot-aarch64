@@ -110,6 +110,18 @@ void VM_Deoptimize::doit() {
   CodeCache::make_marked_nmethods_not_entrant();
 }
 
+void VM_SC_Deoptimize::doit() {
+  // We do not want any GCs to happen while we are in the middle of this VM operation
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("VM_SC_Deoptimize doit start...");
+#endif
+  Universe::flush_sc_dependents_on(_ik);
+#ifndef PRODUCT
+  tty->print_cr("VM_SC_Deoptimize doit finish...");
+#endif
+
+}
 
 VM_DeoptimizeFrame::VM_DeoptimizeFrame(JavaThread* thread, intptr_t* id) {
   _thread = thread;
