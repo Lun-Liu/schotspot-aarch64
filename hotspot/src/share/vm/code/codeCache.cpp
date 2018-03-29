@@ -660,6 +660,9 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
         //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
         //TODO: fix this, should set deoptimized later
         //InstanceKlass::cast(d)->set_sc_deoptimizing();
+	instanceKlassHandle ik = InstanceKlass::cast(d);
+	if(ik->is_sc_deoptimized()||strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))==0)
+	  continue;
         InstanceKlass::cast(d)->set_sc_deoptimized();
       //  d->print();
       }

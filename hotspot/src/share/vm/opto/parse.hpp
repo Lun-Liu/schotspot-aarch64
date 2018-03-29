@@ -530,8 +530,8 @@ class Parse : public GraphKit {
   bool static_field_ok_in_clinit(ciField *field, ciMethod *method);
 
   // common code for actually performing the load or store
-  void do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct);
-  void do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct);
+  void do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct, bool is_java_lib = false);
+  void do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct, bool is_java_lib = false);
   void check_sc_conflict(Node* obj);
 
   // loading from a constant field or the constant pool

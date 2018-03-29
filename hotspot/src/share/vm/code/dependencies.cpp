@@ -1668,7 +1668,7 @@ bool DepChange::ContextStream::next() {
 
 void KlassDepChange::initialize() {
   // entire transaction must be under this lock:
-  assert_lock_strong(Compile_lock);
+  assert_locked_or_safepoint(Compile_lock);
 
   // Mark all dependee and all its superclasses
   // Mark transitive interfaces

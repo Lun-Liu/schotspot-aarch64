@@ -1877,6 +1877,10 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
   if(_obj->is_array()){
     return;
   }
+  ResourceMark rm;
+  const char* hname = m->method_holder()->name()->as_quoted_ascii();
+  bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
+  if(is_java_lib) return;
   MutexLocker mu(Compile_lock, thread);
   oop obj(_obj);
   Klass* k = obj->klass();
@@ -1885,7 +1889,7 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
     return;
   }
 #ifndef PRODUCT
-  ResourceMark rm;
+  //ResourceMark rm;
   tty->print_cr("[%p] sc handling interp triggered by method %s", Thread::current(), m->name_and_sig_as_C_string());
 #endif
   ik->set_sc_deoptimized();
@@ -1900,15 +1904,19 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* th
   if(_obj->is_array()){
     return;
   }
-  MutexLocker mu(Compile_lock, thread);
+  ResourceMark rm;
   oop obj(_obj);
+  const char* hname = obj->klass()->name()->as_quoted_ascii();
+  bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
+  if(is_java_lib) return;
+  MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
   if(ik->is_sc_deoptimized()){
     return;
   }
 #ifndef PRODUCT
-  ResourceMark rm;
+  //ResourceMark rm;
   tty->print_cr("[%p] sc handling interp direct triggered on klass %s", Thread::current(), k->internal_name());
 #endif
   ik->set_sc_deoptimized();
