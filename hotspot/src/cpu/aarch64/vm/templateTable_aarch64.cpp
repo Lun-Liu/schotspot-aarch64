@@ -2687,8 +2687,10 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
     __ mov(r0, obj);
     Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
     __ ldr(r0, mark_addr);
-    __ cmp(r0, rthread);
-    //__ cmp(r0, r0);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
     __ br(Assembler::EQ, exec);
     //Deopt here
     __ mov(r0, obj);
@@ -2731,8 +2733,10 @@ void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
     __ mov(r0, obj);
     Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
     __ ldr(r0, mark_addr);
-    __ cmp(r0, rthread);
-    //__ cmp(r0, r0);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
     __ br(Assembler::EQ, exec);
     // Deopt here
     __ mov(r0, obj);

@@ -712,6 +712,7 @@ bool InstanceKlass::link_class_impl(
           ResourceMark rm;
           RefVerifier ref_verifier(this_oop);
           ref_verifier.verify_class();
+	  //ref_verifier.print_statistics();
         }
 
         // also sets rewritten

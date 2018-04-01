@@ -40,7 +40,9 @@
 
 RefVerifier::RefVerifier(
     instanceKlassHandle klass)
-    : _klass(klass) {
+    : _klass(klass), 
+      _direct_get_count(0), _common_get_count(0),
+      _direct_put_count(0), _common_put_count(0) {
 }
 
 RefVerifier::~RefVerifier() {
@@ -636,7 +638,11 @@ void RefVerifier::verify_method(methodHandle m) {
             if(!stack.pop_stack() || !classtype){
               //tty->print_cr("direct");
               *(m->bcp_from(bci)) = Bytecodes::_direct_putfield;
-            }
+	      _direct_put_count++;
+            }else{
+              _common_put_count++;
+	    }
+
             break;
             }
         case Bytecodes::_getfield :
@@ -646,7 +652,11 @@ void RefVerifier::verify_method(methodHandle m) {
             if(!success || !classtype){
               //tty->print_cr("direct");
               *m->bcp_from(bci) = Bytecodes::_direct_getfield;
-            }
+	      _direct_get_count++;
+            }else{
+              _common_get_count++;
+	    }
+
             if(!success)
                 break;
             index = bcs.get_index_u2();
