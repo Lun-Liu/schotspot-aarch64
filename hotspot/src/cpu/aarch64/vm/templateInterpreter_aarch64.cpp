@@ -1478,8 +1478,10 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
     __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
     Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
     __ ldr(r0, mark_addr);
-    __ cmp(r0, rthread);
-    //__ cmp(r0, r0);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
     __ br(Assembler::EQ, exec);
     //// TODO: Deopt here
     __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));

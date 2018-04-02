@@ -656,18 +656,17 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
   { //No_Safepoint_Verifier nsv;
     for (DepChange::ContextStream str(changes); str.next(); ) {
       Klass* d = str.klass();
-      if(SCDynamic){
-        //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
-        //TODO: fix this, should set deoptimized later
-        //InstanceKlass::cast(d)->set_sc_deoptimizing();
-	instanceKlassHandle ik = InstanceKlass::cast(d);
-	if(ik->is_sc_deoptimized()||strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))==0)
-	  continue;
-        InstanceKlass::cast(d)->set_sc_deoptimized();
+      //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
+      //TODO: fix this, should set deoptimized later
+      //InstanceKlass::cast(d)->set_sc_deoptimizing();
+      instanceKlassHandle ik = InstanceKlass::cast(d);
+      if(ik->is_sc_deoptimized())
+        continue;
+      ik->set_sc_deoptimized();
+      //if(strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))!=0)
+      number_of_marked_CodeBlobs += mark_for_sc_deoptimization(ik);
       //  d->print();
-      }
       //number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
-      number_of_marked_CodeBlobs += mark_for_sc_deoptimization(InstanceKlass::cast(d));
     }
   }
 
