@@ -1184,9 +1184,9 @@ void Parse::do_method_entry() {
     _synch_lock = shared_lock(lock_obj);
   }
 
-  //const char* hname = C->method()->holder()->name()->as_quoted_ascii();
-  //bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
-  bool is_java_lib = false;
+  const char* hname = C->method()->holder()->name()->as_quoted_ascii();
+  bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
+  //bool is_java_lib = false;
   if(SCDynamic  && (method()->holder()->is_sc_safe() &&!is_java_lib )){
     Node* lock_obj = NULL;
     if(method()->is_static()){
