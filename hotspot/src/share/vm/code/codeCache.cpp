@@ -662,7 +662,9 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
       //if(ik->is_sc_deoptimized())
       //  continue;
       ik->set_sc_deoptimized();
-      if(strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))!=0)
+      bool should_skipped = strstr(SCSkipKlass, ik->name()->as_quoted_ascii()) != NULL;
+      //if(strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))!=0)
+      if(!should_skipped)
         number_of_marked_CodeBlobs += mark_for_sc_deoptimization(ik);
       //  d->print();
       //number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);

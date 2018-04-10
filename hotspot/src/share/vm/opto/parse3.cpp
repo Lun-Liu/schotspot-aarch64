@@ -133,7 +133,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
         hname = field->holder()->name()->as_quoted_ascii();
       else
         hname = C->method()->holder()->name()->as_quoted_ascii();
-      bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
+      bool is_java_lib = C->sc_klass_skipped(hname); 
       //bool is_java_lib = false;
       if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
@@ -148,7 +148,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
         hname = field->holder()->name()->as_quoted_ascii();
       else
         hname = C->method()->holder()->name()->as_quoted_ascii();
-      bool is_java_lib = strncmp("java/", hname, strlen("java/")) == 0;
+      bool is_java_lib = C->sc_klass_skipped(hname); 
       //bool is_java_lib = false;
       if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
