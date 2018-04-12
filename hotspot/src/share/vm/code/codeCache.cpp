@@ -633,11 +633,11 @@ static int dependentCheckCount = 0;
 int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
 #ifndef PRODUCT
   ResourceMark rm;
-  tty->print_cr("acquiring mutex CodeCache_lock...");
+  //tty->print_cr("acquiring mutex CodeCache_lock...");
 #endif
   MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
 #ifndef PRODUCT
-  tty->print_cr("acquired mutex CodeCache_lock...");
+  //tty->print_cr("acquired mutex CodeCache_lock...");
 #endif
 
 #ifndef PRODUCT
@@ -657,11 +657,16 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
     for (DepChange::ContextStream str(changes); str.next(); ) {
       Klass* d = str.klass();
       if(SCDynamic){
-        //printf("[%p] Dep Klass. Set SC Deoptimized for class %s\n",Thread::current(), d->internal_name());
-        //TODO: fix this, should set deoptimized later
-        //InstanceKlass::cast(d)->set_sc_deoptimizing();
+	if(InstanceKlass::cast(d)->is_sc_deoptimized())
+	  continue;
         InstanceKlass::cast(d)->set_sc_deoptimized();
       //  d->print();
+#ifndef PRODUCT
+	ResourceMark rm;
+        tty->print_cr("[%p] Dep Klass. Set SC Deoptimized for class %s",Thread::current(), d->internal_name());
+        //TODO: fix this, should set deoptimized later
+        //InstanceKlass::cast(d)->set_sc_deoptimizing();
+#endif
       }
       //number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
       number_of_marked_CodeBlobs += mark_for_sc_deoptimization(InstanceKlass::cast(d));
@@ -692,6 +697,10 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
 
 int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
   //MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+#ifndef PRODUCT
+	ResourceMark rm;
+        tty->print_cr("[%p] mark for sc deopt for class %s",Thread::current(), dependee->internal_name());
+#endif
 
 #ifndef PRODUCT
   dependentCheckTime.start();

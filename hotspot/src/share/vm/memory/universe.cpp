@@ -1252,7 +1252,7 @@ void Universe::flush_sc_dependents_on(instanceKlassHandle dependee) {
   KlassDepChange changes(dependee);
 
   // Compute the dependent nmethods
-  if (CodeCache::mark_for_sc_deoptimization(changes) > 0) {
+  if (CodeCache::mark_for_sc_deoptimization(dependee) + CodeCache::mark_for_sc_deoptimization(changes) > 0) {
   //if (CodeCache::mark_for_sc_deoptimization(dependee) > 0) {
     // At least one nmethod has been marked for deoptimization
     //VM_Deoptimize op;

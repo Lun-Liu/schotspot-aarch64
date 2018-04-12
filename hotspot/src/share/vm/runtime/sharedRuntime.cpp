@@ -1881,14 +1881,21 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
   oop obj(_obj);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp: is %s sc_deoptimized - %d", Thread::current(), ik->internal_name(), ik->is_sc_deoptimized() );
+#endif
   if(ik->is_sc_deoptimized()){
     return;
   }
 #ifndef PRODUCT
-  ResourceMark rm;
+  //ResourceMark rm;
   tty->print_cr("[%p] sc handling interp triggered by method %s", Thread::current(), m->name_and_sig_as_C_string());
 #endif
   ik->set_sc_deoptimized();
+#ifndef PRODUCT
+  tty->print_cr("[%p] sc handling interp: %s set sc_deoptimized", Thread::current(), ik->internal_name() );
+#endif
   VM_SC_Deoptimize op(ik);
   VMThread::execute(&op);
   assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
