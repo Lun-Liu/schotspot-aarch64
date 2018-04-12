@@ -2394,6 +2394,7 @@ source %{
 bool unnecessary_acquire(const Node *barrier)
 {
   assert(barrier->is_MemBar(), "expecting a membar");
+  return true;
 
   if (UseBarriersForVolatile) {
     // we need to plant a dmb
@@ -2502,6 +2503,7 @@ bool unnecessary_acquire(const Node *barrier)
 bool needs_acquiring_load(const Node *n)
 {
   assert(n->is_Load(), "expecting a load");
+  return false;
   if (UseBarriersForVolatile) {
     // we use a normal load and a dmb
     return false;
@@ -2587,6 +2589,7 @@ bool unnecessary_release(const Node *n)
   assert((n->is_MemBar() &&
 	  n->Opcode() == Op_MemBarRelease),
 	 "expecting a release membar");
+  return true;
 
   if (UseBarriersForVolatile) {
     // we need to plant a dmb
@@ -2623,6 +2626,7 @@ bool unnecessary_release(const Node *n)
 
 bool unnecessary_volatile(const Node *n)
 {
+  return false;
   // assert n->is_MemBar();
   if (UseBarriersForVolatile) {
     // we need to plant a dmb
@@ -2649,6 +2653,7 @@ bool unnecessary_volatile(const Node *n)
 bool needs_releasing_store(const Node *n)
 {
   // assert n->is_Store();
+  return false;
   if (UseBarriersForVolatile) {
     // we use a normal store and dmb combination
     return false;
