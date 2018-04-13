@@ -131,6 +131,9 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
       if(is_direct && is_field_holder_sc_safe){
         //receiver obj
         check_sc_conflict(obj);
+        C->dependencies()->assert_evol_fast_klass(field->holder());
+      } else { 
+        C->dependencies()->assert_evol_klass(field->holder());
       }
       (void) pop();  // pop receiver before getting
       do_get_xxx(obj, field, is_field, is_direct);
@@ -139,6 +142,9 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
       if(is_direct && is_field_holder_sc_safe){
         //receiver obj
         check_sc_conflict(obj);
+        C->dependencies()->assert_evol_fast_klass(field->holder());
+      } else { 
+        C->dependencies()->assert_evol_klass(field->holder());
       }
       do_put_xxx(obj, field, is_field, is_direct);
       (void) pop();  // pop receiver after putting
@@ -182,7 +188,6 @@ void Parse::check_sc_conflict(Node* obj){
  
   // Add this to the worklist so that the lock can be eliminated
   record_for_igvn(sc);
-  C->dependencies()->assert_evol_klass(method()->holder());
 }
 
 

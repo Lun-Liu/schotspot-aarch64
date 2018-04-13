@@ -1859,11 +1859,20 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, Ja
   MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] SC Deopt triggered by %s, is_sc_deoptimized %d", Thread::current(), ik->internal_name(),ik->is_sc_deoptimized());
+#endif
   if(ik->is_sc_deoptimized()){
+#ifndef PRODUCT
+  vframeStream vfst(thread, true);
+  Method* m = vfst.method();
+  int bci = vfst.bci();
+  tty->print_cr("[%p] Cur Method %s at bci %d", Thread::current(), m->name_and_sig_as_C_string(),bci);
+#endif
     return;
   }
 #ifndef PRODUCT
-  ResourceMark rm;
   tty->print_cr("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p", Thread::current(), ik->internal_name(), thread, obj->sc_mark()->owner_thread());
 #endif
   ik->set_sc_deoptimized();

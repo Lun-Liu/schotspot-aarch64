@@ -487,7 +487,10 @@ Parse::Parse(JVMState* caller, ciMethod* parse_method, float expected_uses)
   if (C->env()->jvmti_can_hotswap_or_post_breakpoint()) {
     C->dependencies()->assert_evol_method(method());
   }
-  C->dependencies()->assert_evol_klass(method() -> holder());
+  if(method()->holder()->is_sc_safe())
+    C->dependencies()->assert_evol_fast_klass(method() -> holder());
+  else
+    C->dependencies()->assert_evol_klass(method() -> holder());
 
   methods_seen++;
 

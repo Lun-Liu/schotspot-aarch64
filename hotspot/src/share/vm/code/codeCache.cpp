@@ -708,6 +708,7 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
 #endif // PRODUCT
 
   int number_of_marked_CodeBlobs = 0;
+  //dependee->set_sc_deoptimized();
 
   // search the hierarchy looking for nmethods which are affected by the loading of this class
 

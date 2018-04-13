@@ -117,6 +117,7 @@ void VM_SC_Deoptimize::doit() {
   tty->print_cr("VM_SC_Deoptimize doit start...");
 #endif
   Universe::flush_sc_dependents_on(_ik);
+  SystemDictionary::notice_modification();
 #ifndef PRODUCT
   tty->print_cr("VM_SC_Deoptimize doit finish...");
 #endif
