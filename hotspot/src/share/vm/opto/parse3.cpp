@@ -128,7 +128,14 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
 
     if (is_get) {
       bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
-      if(is_direct && is_field_holder_sc_safe){
+      const char* hname;
+      if(is_direct) 
+        hname = field->holder()->name()->as_quoted_ascii();
+      else
+        hname = C->method()->holder()->name()->as_quoted_ascii();
+      bool is_java_lib = C->sc_klass_skipped(hname); 
+      //bool is_java_lib = false;
+      if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
@@ -136,17 +143,24 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
         C->dependencies()->assert_evol_klass(field->holder());
       }
       (void) pop();  // pop receiver before getting
-      do_get_xxx(obj, field, is_field, is_direct);
+      do_get_xxx(obj, field, is_field, is_direct, is_java_lib);
     } else {
       bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
-      if(is_direct && is_field_holder_sc_safe){
+      const char* hname;
+      if(is_direct) 
+        hname = field->holder()->name()->as_quoted_ascii();
+      else
+        hname = C->method()->holder()->name()->as_quoted_ascii();
+      bool is_java_lib = C->sc_klass_skipped(hname); 
+      //bool is_java_lib = false;
+      if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
       } else { 
         C->dependencies()->assert_evol_klass(field->holder());
       }
-      do_put_xxx(obj, field, is_field, is_direct);
+      do_put_xxx(obj, field, is_field, is_direct, is_java_lib);
       (void) pop();  // pop receiver after putting
     }
   } else {
@@ -191,7 +205,7 @@ void Parse::check_sc_conflict(Node* obj){
 }
 
 
-void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct) {
+void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct, bool is_java_lib) {
   // Does this field have a constant value?  If so, just push the value.
   if (field->is_constant()) {
     // final or stable field
@@ -254,7 +268,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct)
       is_vol = field -> is_volatile();
   }
 
-  if((!SC && !SCComp) || C-> sc_method_skipped() )
+  if((!SC && !SCComp) || C-> sc_method_skipped() ||is_java_lib )
     is_vol = field -> is_volatile();
 
 
@@ -339,7 +353,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct)
   }
 }
 
-void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct) {
+void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct, bool is_java_lib) {
 
   bool is_vol = true;
   bool is_method_sc_safe = method()->holder()->is_sc_safe();
@@ -350,7 +364,7 @@ void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct)
       is_vol = field -> is_volatile();
   }
 
-  if((!SC && !SCComp) || C-> sc_method_skipped() )
+  if((!SC && !SCComp) || C-> sc_method_skipped() || is_java_lib )
     is_vol = field -> is_volatile();
   // If reference is volatile, prevent following memory ops from
   // floating down past the volatile write.  Also prevents commoning

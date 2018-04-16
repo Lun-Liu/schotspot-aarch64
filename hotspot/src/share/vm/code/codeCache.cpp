@@ -657,9 +657,10 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
     for (DepChange::ContextStream str(changes); str.next(); ) {
       Klass* d = str.klass();
       if(SCDynamic){
-	if(InstanceKlass::cast(d)->is_sc_deoptimized())
+        instanceKlassHandle ik = InstanceKlass::cast(d);
+	if(ik->is_sc_deoptimized())
 	  continue;
-        InstanceKlass::cast(d)->set_sc_deoptimized();
+        ik->set_sc_deoptimized();
       //  d->print();
 #ifndef PRODUCT
 	ResourceMark rm;
@@ -667,9 +668,11 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
         //TODO: fix this, should set deoptimized later
         //InstanceKlass::cast(d)->set_sc_deoptimizing();
 #endif
-      }
-      //number_of_marked_CodeBlobs += InstanceKlass::cast(d)->mark_sc_dependent_nmethods(changes);
-      number_of_marked_CodeBlobs += mark_for_sc_deoptimization(InstanceKlass::cast(d));
+        bool should_skipped = strstr(SCSkipKlass, ik->name()->as_quoted_ascii()) != NULL;
+        //if(strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))!=0)
+        if(!should_skipped)
+          number_of_marked_CodeBlobs += mark_for_sc_deoptimization(ik);
+        }
     }
   }
 

@@ -3698,6 +3698,14 @@ bool Compile::sc_method_skipped() const {
   }
 }
 
+bool Compile::sc_klass_skipped(const char* hname) const{
+  if(strstr(SCSkipKlass, hname) != NULL){
+    return true;
+  } else {
+    return false; 
+  }
+}
+
 //=============================================================================
 // Two Constant's are equal when the type and the value are equal.
 bool Compile::Constant::operator==(const Constant& other) {

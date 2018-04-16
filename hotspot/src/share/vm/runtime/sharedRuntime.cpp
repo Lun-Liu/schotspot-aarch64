@@ -1916,8 +1916,8 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* th
   if(_obj->is_array()){
     return;
   }
-  MutexLocker mu(Compile_lock, thread);
   oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
   instanceKlassHandle ik(thread,k);
   if(ik->is_sc_deoptimized()){
