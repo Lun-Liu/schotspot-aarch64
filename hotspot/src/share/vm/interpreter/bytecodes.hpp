@@ -437,12 +437,7 @@ class Bytecodes: AllStatic {
                                                                                           code == _invokeinterface; }
   static bool        has_optional_appendix(Code code) { return code == _invokedynamic || code == _invokehandle; }
 
-  static bool        is_direct_field_access (Code code)    { return (code == _direct_putfield || code == _direct_getfield || code == _fast_agetfield
-                                                        ||   code == _fast_bgetfield  || code == _fast_cgetfield  || code == _fast_dgetfield
-                                                        ||   code == _fast_fgetfield  || code == _fast_igetfield  || code == _fast_lgetfield
-                                                        ||   code == _fast_sgetfield  || code == _fast_aputfield  || code == _fast_bputfield
-                                                        ||   code == _fast_cputfield  || code == _fast_dputfield  || code == _fast_fputfield
-                                                        ||   code == _fast_iputfield  || code == _fast_lputfield  || code == _fast_sputfield); }
+  static bool        is_direct_field_access (Code code)    { return (code == _direct_putfield || code == _direct_getfield); }
 
   static int         compute_flags  (const char* format, int more_flags = 0);  // compute the flags
   static int         flags          (int code, bool is_wide) {
