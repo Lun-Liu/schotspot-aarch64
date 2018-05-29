@@ -2173,8 +2173,8 @@ bool PhaseMacroExpand::eliminate_sc_node(SCNode* sc) {
   // Delete FastLock node also if this Lock node is unique user
   // (a loop peeling may clone a Lock node).
   Node* sccheck = sc->as_SC()->check_node();
-  if (sccheck->outcnt() == 2) {
-    assert(sccheck->raw_out(0) == sc && sccheck->raw_out(1) == sc, "sanity");
+  if (sccheck->outcnt() == 1) {
+    assert(sccheck->unique_out() == sc, "sanity");
     _igvn.replace_node(sccheck, top());
   }
 

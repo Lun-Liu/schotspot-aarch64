@@ -1881,9 +1881,13 @@ void AbstractLockNode::log_lock_optimization(Compile *C, const char * tag)  cons
 //   - sc nodes on other objects
 //
 static Node *next_sc_control(Node *ctrl, Node* obj) {
-  if (ctrl == NULL)
-    return NULL;
+#ifndef PRODUCT
+  //tty->print_cr("next_sc_control begin");
+  //ctrl->dump();
+#endif
   while (1) {
+    if (ctrl == NULL)
+      return NULL;
     if (ctrl->is_Region()) {
       RegionNode *r = ctrl->as_Region();
       Node *n = r->is_copy();
@@ -1895,8 +1899,13 @@ static Node *next_sc_control(Node *ctrl, Node* obj) {
       Node *in0 = ctrl->in(0);
       if (in0->is_MemBar()) {//TODO: might want to be more precise
         ctrl = in0->in(0);
-      } else if(in0 -> is_SC() && !in0->as_SC()->obj_node()->eqv_uncast(obj)){
-	ctrl = in0->in(0);
+      } else if(in0 -> is_SC()){
+	Node* obj0 = in0->as_SC()->obj_node();
+	assert(obj0!=NULL, "sanity");
+	if(!obj0->eqv_uncast(obj))
+	  ctrl = in0->in(0);
+	else
+          break;
       } else {
         break;
       }
@@ -1905,8 +1914,9 @@ static Node *next_sc_control(Node *ctrl, Node* obj) {
     }
   }
 #ifndef PRODUCT
-  tty->print_cr("find control node");
-  ctrl->dump();
+  //tty->print_cr("next_sc_control end");
+  //tty->print_cr("find control node");
+  //ctrl->dump();
 #endif
   return ctrl;
 }
@@ -1917,6 +1927,7 @@ static Node *next_sc_control(Node *ctrl, Node* obj) {
 // operating on the same object as SC.
 //
 bool SCNode::find_matching_sc_in_block(const Node* ctrl) {
+  if(ctrl == NULL) return false;
   ProjNode *ctrl_proj = (ctrl->is_Proj()) ? ctrl->as_Proj() : NULL;
   if (ctrl_proj != NULL && ctrl_proj->_con == TypeFunc::Control) {
     Node *n = ctrl_proj->in(0);
@@ -1937,7 +1948,7 @@ bool SCNode::find_sc_for_region(const RegionNode* region) {
   for (int i = 1; i < (int)region->req(); i++) {
     Node *in_node = next_sc_control(region->in(i), obj_node());
     if (in_node != NULL) {
-      if (find_matching_sc(in_node)) {
+      if (find_matching_sc_in_block(in_node)) {
         // found a match so keep on checking.
         continue;
       } 
@@ -1958,7 +1969,7 @@ bool SCNode::find_sc_through_if(Node* node) {
 
   if (if_node->is_If() && if_node->outcnt() == 2 && (if_true || node->is_IfFalse())) {
     Node *prev_ctrl = next_sc_control(if_node->in(0), obj_node());
-    if (find_matching_sc(prev_ctrl)) {
+    if (find_matching_sc_in_block(prev_ctrl)) {
       set_eliminated();
       return true;
     }
@@ -1967,24 +1978,26 @@ bool SCNode::find_sc_through_if(Node* node) {
   return false;
 }
 
-bool SCNode::find_matching_sc(Node* ctrl0){
-  Node *ctrl = next_sc_control(ctrl0, obj_node());
+bool SCNode::find_matching_sc(Node* ctrl){
   if(ctrl == NULL) return false;
   // now search back for a matching SC 
   if (find_matching_sc_in_block(ctrl)) {
     // found an SC directly preceding this SC.  This is the
     // case of single SC directly control dependent on a
     // single SC
+    tty->print_cr("check removed");
     return true;
   } else if (ctrl->is_Region()){
     if(find_sc_for_region(ctrl->as_Region())){
       // found sc preceded by multiple sc along all paths
       // joining at this point 
+    tty->print_cr("check removed");
       return true;
     }
   } else if (ctrl->is_IfTrue() || ctrl->is_IfFalse()){
     if(find_sc_through_if(ctrl)){
       // see if there is a sc before this if
+    tty->print_cr("check removed");
       return true;
     }
   } 
@@ -2017,6 +2030,7 @@ Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
       return result;
     }
 
+    //
     //
     // Try coarse checks
     //
