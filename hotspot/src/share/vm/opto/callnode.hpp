@@ -1108,6 +1108,8 @@ public:
 //    1 -   a SCCheckNode
 //
 class SCNode : public CallNode {
+private:
+  bool _is_eliminated;
 public:
 
   static const TypeFunc *sc_type() {
@@ -1131,6 +1133,7 @@ public:
     init_class_id(Class_SC);
     init_flags(Flag_is_macro);
     C->add_macro_node(this);
+    _is_eliminated = false;
   }
   virtual bool        guaranteed_safepoint()  { return false; }
 
@@ -1143,8 +1146,13 @@ public:
     }
   }
 
+  bool find_matching_sc(const Node* ctrl, SCNode* sc);
+
   Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
   Node *   check_node() const  {return in(TypeFunc::Parms + 1); }
+
+  bool is_eliminated() {return _is_eliminated; }
+  void set_eliminated() {_is_eliminated = true; }
 
 };
 

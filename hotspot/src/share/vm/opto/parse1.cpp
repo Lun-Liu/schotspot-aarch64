@@ -1197,8 +1197,47 @@ void Parse::do_method_entry() {
       //TODO:
     }else{
       lock_obj = local(0);
-      //
+#ifndef PRODUCT
+      int opcode = lock_obj->Opcode();
+      //lock_obj->fast_dump();
+      assert(opcode == Op_Parm || opcode == Op_CastPP || opcode == Op_LoadP || opcode == Op_CheckCastPP || opcode == Op_Phi || /*WHY*/ opcode == Op_ConP, "unknown lock_obj node type");
+      if(opcode == Op_ConP){
+	tty->print("Compiler method: ");
+	C->method()->print_short_name();
+	tty->print_cr("");
+	tty->print("Parser method: ");
+	method()->print_short_name();
+	tty->print_cr("");
+        lock_obj->dump_spec(tty);
+        const Type* t = lock_obj->as_Type()->type();
+	if(t->isa_ptr()){
+	  tty->print_cr("%p", t->is_ptr()->get_con());
+	} else {
+          tty->print_cr("%p", t->is_rawptr()->get_con());
+	}
+      }
+#endif
       bool need_check = true;
+      //go all the way up through control node
+      //Node* ctrl = control();
+      //while(true){
+      //  if(ctrl->is_Region() && ctrl->req() == 2){
+      //    ctrl = ctrl->in(1);
+      //  } else if (ctrl -> is_Proj() && (ctrl->in(0)->is_MemBar() || ctrl->in(0)->is_SC())){
+      //    ctrl = ctrl->in(0)->in(0);
+      //  } else {
+      //    break;
+      //  }
+      //}
+      //int cnt = ctrl->outcnt();
+      //for(int i = 0; i < cnt; i++){
+      //  Node* child = ctrl->raw_out(i);
+      //  if(child->is_SCCheck() && child->in(1) == lock_obj){
+      //    //found existing SCCheck no need to check here
+      //    need_check = false;
+      //    break;
+      //  }
+      //}
       //Node* uncasted_lock_obj = lock_obj->uncast();
       if(need_check){
         kill_dead_locals();

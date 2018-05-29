@@ -175,6 +175,25 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
 }
 
 void Parse::check_sc_conflict(Node* obj){
+  //go all the way up through control node
+  //Node* ctrl = control();
+  //while(true){
+  //  if(ctrl->is_Region() && ctrl->req() == 2){
+  //    ctrl = ctrl->in(1);
+  //  } else if (ctrl -> is_Proj() && (ctrl->in(0)->is_MemBar() || ctrl->in(0)->is_SC())){
+  //    ctrl = ctrl->in(0)->in(0);
+  //  } else {
+  //    break;
+  //  }
+  //}
+  //int cnt = ctrl->outcnt();
+  //for(int i = 0; i < cnt; i++){
+  //  Node* child = ctrl->raw_out(i);
+  //  if(child->is_SCCheck() && child->in(1) == obj){
+  //    //found existing SCCheck no need to check here
+  //    return;
+  //  }
+  //}
   kill_dead_locals();
   Node* mem = reset_memory();
   Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), obj));

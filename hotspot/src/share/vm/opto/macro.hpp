@@ -98,6 +98,7 @@ private:
   void mark_eliminated_box(Node* box, Node* obj);
   void mark_eliminated_locking_nodes(AbstractLockNode *alock);
   bool eliminate_locking_node(AbstractLockNode *alock);
+  bool eliminate_sc_node(SCNode *sc);
   void expand_lock_node(LockNode *lock);
   void expand_unlock_node(UnlockNode *unlock);
   void expand_sc_node(SCNode *sc);

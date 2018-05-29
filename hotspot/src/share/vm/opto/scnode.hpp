@@ -30,13 +30,13 @@ public:
   Node* obj_node() const { return in(1); }
   // FastLock and FastUnlockNode do not hash, we need one for each correspoding
   // LockNode/UnLockNode to avoid creating Phi's.
-  virtual uint hash() const ;                  // { return NO_HASH; }
+  virtual uint hash() const                    { return NO_HASH; }
   virtual uint size_of() const;
   virtual uint cmp( const Node &n ) const ;    // Always fail, except on self
   virtual int Opcode() const;
   //virtual const Type *Value( PhaseTransform *phase ) const;
-  virtual const Type *Value( PhaseTransform *phase ) const { return TypeInt::CC; }
-  //virtual Node *Identity(PhaseTransform *phase);
+  virtual const Type *Value( PhaseTransform *phase ) const ; //{ return TypeInt::CC; }
+  virtual Node *Identity(PhaseTransform *phase);
   const Type *sub(const Type *t1, const Type *t2) const { return TypeInt::CC;}
 };
 

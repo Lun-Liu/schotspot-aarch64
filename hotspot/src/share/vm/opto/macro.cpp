@@ -2136,6 +2136,53 @@ bool PhaseMacroExpand::eliminate_locking_node(AbstractLockNode *alock) {
 }
 
 
+// we have determined that this SCNode can be eliminated, we simply
+// eliminate the node without expanding it.
+//
+bool PhaseMacroExpand::eliminate_sc_node(SCNode* sc) {
+
+  if (!sc->is_eliminated()) {
+    return false;
+  }
+
+  Node* mem  = sc->in(TypeFunc::Memory);
+  Node* ctrl = sc->in(TypeFunc::Control);
+
+  extract_call_projections(sc);
+  // There are 2 projections from the SCNode.  The SCNode will
+  // be deleted when its last use is subsumed below.
+  assert(sc->outcnt() == 2 &&
+         _fallthroughproj != NULL &&
+         _memproj_fallthrough != NULL,
+         "Unexpected projections from SCNode");
+
+  Node* fallthroughproj = _fallthroughproj;
+  Node* memproj_fallthrough = _memproj_fallthrough;
+
+  // The memory projection from a SCNode is RawMem
+  // The input to a SCNode is merged memory, so extract its RawMem input
+  // (unless the MergeMem has been optimized away.)
+  // Seach for MemBarAcquireLock node and delete it also.
+  MemBarNode* membar = fallthroughproj->unique_ctrl_out()->as_MemBar();
+  assert(membar != NULL && membar->Opcode() == Op_MemBarAcquireLock, "");
+  Node* ctrlproj = membar->proj_out(TypeFunc::Control);
+  Node* memproj = membar->proj_out(TypeFunc::Memory);
+  _igvn.replace_node(ctrlproj, fallthroughproj);
+  _igvn.replace_node(memproj, memproj_fallthrough);
+
+  // Delete FastLock node also if this Lock node is unique user
+  // (a loop peeling may clone a Lock node).
+  Node* sccheck = sc->as_SC()->check_node();
+  if (sccheck->outcnt() == 2) {
+    assert(sccheck->raw_out(0) == sc && sccheck->raw_out(1) == sc, "sanity");
+    _igvn.replace_node(sccheck, top());
+  }
+
+  _igvn.replace_node(fallthroughproj, ctrl);
+  _igvn.replace_node(memproj_fallthrough, mem);
+  return true;
+}
+
 //------------------------------expand_lock_node----------------------
 void PhaseMacroExpand::expand_lock_node(LockNode *lock) {
 
@@ -2493,7 +2540,7 @@ void PhaseMacroExpand::expand_sc_node(SCNode *sc) {
 
 
 //---------------------------eliminate_macro_nodes----------------------
-// Eliminate scalar replaced allocations and associated locks.
+// Eliminate scalar replaced allocations and associated locks and sc nodes.
 void PhaseMacroExpand::eliminate_macro_nodes() {
   if (C->macro_count() == 0)
     return;
@@ -2517,6 +2564,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       debug_only(int old_macro_count = C->macro_count(););
       if (n->is_AbstractLock()) {
         success = eliminate_locking_node(n->as_AbstractLock());
+      } else if(n -> is_SC()){
+        success = eliminate_sc_node(n->as_SC());
       }
       assert(success == (C->macro_count() < old_macro_count), "elimination reduces macro count");
       progress = progress || success;

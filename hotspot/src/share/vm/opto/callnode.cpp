@@ -1873,10 +1873,110 @@ void AbstractLockNode::log_lock_optimization(Compile *C, const char * tag)  cons
   }
 }
 
-uint SCNode::size_of() const { return sizeof(*this); }
 
 //=============================================================================
+// Utility function to skip over uninteresting control nodes.  Nodes skipped are:
+//   - copy regions.  (These may not have been optimized away yet.)
+//   - membar nodes
+//   - sc nodes on other objects
+//
+static Node *next_sc_control(Node *ctrl, Node* obj) {
+  if (ctrl == NULL)
+    return NULL;
+  while (1) {
+    if (ctrl->is_Region()) {
+      RegionNode *r = ctrl->as_Region();
+      Node *n = r->is_copy();
+      if (n == NULL)
+        break;  // hit a region, return it
+      else
+        ctrl = n;
+    } else if (ctrl->is_Proj()) {
+      Node *in0 = ctrl->in(0);
+      if (in0->is_MemBar()) {//TODO: might want to be more precise
+        ctrl = in0->in(0);
+      } else if(in0 -> is_SC() && !in0->as_SC()->obj_node()->eqv_uncast(obj)){
+	ctrl = in0->in(0);
+      } else {
+        break;
+      }
+    } else {
+      break; // found an interesting control
+    }
+  }
+  tty->print_cr("find control node");
+  ctrl->dump();
+  return ctrl;
+}
+
+//
+// Given a control, see if it's the control projection of an SC which
+// operating on the same object as SC.
+//
+bool SCNode::find_matching_sc(const Node* ctrl, SCNode* sc) {
+  ProjNode *ctrl_proj = (ctrl->is_Proj()) ? ctrl->as_Proj() : NULL;
+  if (ctrl_proj != NULL && ctrl_proj->_con == TypeFunc::Control) {
+    Node *n = ctrl_proj->in(0);
+    if (n != NULL && n->is_SC()) {
+      SCNode *prev_sc = n->as_SC();
+      if (sc->obj_node()->eqv_uncast(prev_sc->obj_node())){
+	sc->set_eliminated();
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+uint SCNode::size_of() const { return sizeof(*this); }
+
 Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
-  return NULL;
+  // perform any generic optimizations first (returns 'this' or NULL)
+  Node *result = SafePointNode::Ideal(phase, can_reshape);
+  if (result != NULL)  return result;
+  // Don't bother trying to transform a dead node
+  if (in(0) && in(0)->is_top())  return NULL;
+
+  // Now see if we can optimize away this SCNode.  We don't actually
+  // remove the node here, we simply set the _is_eliminated flag which
+  // prevents macro expansion from expanding the SCNode.  Since we don't
+  // modify the graph, the value returned from this function is the
+  // one computed above.
+  if (can_reshape && !is_eliminated()) {
+    //
+    // If we are checking an unescaped object, the sccheck is unnecessary
+    //
+    ConnectionGraph *cgr = phase->C->congraph();
+    if (cgr != NULL && cgr->not_global_escape(obj_node())) {
+      assert(!is_eliminated(), "sanity");
+      this->set_eliminated();
+      return result;
+    }
+
+    //
+    // Try coarse checks
+    //
+    PhaseIterGVN* iter = phase->is_IterGVN();
+    if (iter != NULL && !is_eliminated()) {
+
+      Node *ctrl = next_sc_control(in(0), obj_node());
+
+      // now search back for a matching SC 
+      if (find_matching_sc(ctrl, this)) {
+        // found an SC directly preceding this SC.  This is the
+        // case of single SC directly control dependent on a
+        // single SC
+      } else if (ctrl->is_Region() &&
+                 iter->_worklist.member(ctrl)) {
+        // We weren't able to find any opportunities but the region this
+        // sc is control dependent on hasn't been processed yet so put
+        // this sc back on the worklist so we can check again once any
+        // region simplification has occurred.
+        iter->_worklist.push(this);
+      }
+    }
+  }
+
+  return result;
 }
 
