@@ -1146,8 +1146,10 @@ public:
     }
   }
 
-  bool find_matching_sc(const Node* ctrl, SCNode* sc);
-  bool find_sc_for_region(const RegionNode* region, SCNode* sc);
+  bool find_matching_sc(Node* ctrl);
+  bool find_matching_sc_in_block(const Node* ctrl);
+  bool find_sc_for_region(const RegionNode* region);
+  bool find_sc_through_if(Node* node);
 
   Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
   Node *   check_node() const  {return in(TypeFunc::Parms + 1); }

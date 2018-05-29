@@ -1916,14 +1916,14 @@ static Node *next_sc_control(Node *ctrl, Node* obj) {
 // Given a control, see if it's the control projection of an SC which
 // operating on the same object as SC.
 //
-bool SCNode::find_matching_sc(const Node* ctrl, SCNode* sc) {
+bool SCNode::find_matching_sc_in_block(const Node* ctrl) {
   ProjNode *ctrl_proj = (ctrl->is_Proj()) ? ctrl->as_Proj() : NULL;
   if (ctrl_proj != NULL && ctrl_proj->_con == TypeFunc::Control) {
     Node *n = ctrl_proj->in(0);
     if (n != NULL && n->is_SC()) {
       SCNode *prev_sc = n->as_SC();
-      if (sc->obj_node()->eqv_uncast(prev_sc->obj_node())){
-	sc->set_eliminated();
+      if (obj_node()->eqv_uncast(prev_sc->obj_node())){
+	set_eliminated();
         return true;
       }
     }
@@ -1931,13 +1931,13 @@ bool SCNode::find_matching_sc(const Node* ctrl, SCNode* sc) {
   return false;
 }
 
-bool SCNode::find_sc_for_region(const RegionNode* region, SCNode* sc) {
+bool SCNode::find_sc_for_region(const RegionNode* region) {
   // check each control merging at this point for a matching sc
   // in(0) should be self edge so skip it.
   for (int i = 1; i < (int)region->req(); i++) {
-    Node *in_node = next_sc_control(region->in(i), sc->obj_node());
+    Node *in_node = next_sc_control(region->in(i), obj_node());
     if (in_node != NULL) {
-      if (find_matching_sc(in_node, sc)) {
+      if (find_matching_sc(in_node)) {
         // found a match so keep on checking.
         continue;
       } 
@@ -1947,9 +1947,49 @@ bool SCNode::find_sc_for_region(const RegionNode* region, SCNode* sc) {
       return false;
     }
   }
-  sc->set_eliminated();
+  set_eliminated();
   return true;
 
+}
+
+bool SCNode::find_sc_through_if(Node* node) {
+  Node* if_node = node->in(0);
+  bool  if_true = node->is_IfTrue();
+
+  if (if_node->is_If() && if_node->outcnt() == 2 && (if_true || node->is_IfFalse())) {
+    Node *prev_ctrl = next_sc_control(if_node->in(0), obj_node());
+    if (find_matching_sc(prev_ctrl)) {
+      set_eliminated();
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool SCNode::find_matching_sc(Node* ctrl0){
+  Node *ctrl = next_sc_control(ctrl0, obj_node());
+  if(ctrl == NULL) return false;
+  // now search back for a matching SC 
+  if (find_matching_sc_in_block(ctrl)) {
+    // found an SC directly preceding this SC.  This is the
+    // case of single SC directly control dependent on a
+    // single SC
+    return true;
+  } else if (ctrl->is_Region()){
+    if(find_sc_for_region(ctrl->as_Region())){
+      // found sc preceded by multiple sc along all paths
+      // joining at this point 
+      return true;
+    }
+  } else if (ctrl->is_IfTrue() || ctrl->is_IfFalse()){
+    if(find_sc_through_if(ctrl)){
+      // see if there is a sc before this if
+      return true;
+    }
+  } 
+
+  return false;
 }
 
 uint SCNode::size_of() const { return sizeof(*this); }
@@ -1984,18 +2024,8 @@ Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     if (iter != NULL && !is_eliminated()) {
 
       Node *ctrl = next_sc_control(in(0), obj_node());
-
-      // now search back for a matching SC 
-      if (find_matching_sc(ctrl, this)) {
-        // found an SC directly preceding this SC.  This is the
-        // case of single SC directly control dependent on a
-        // single SC
-      } else if (ctrl->is_Region()){
-        if(find_sc_for_region(ctrl->as_Region(), this)){
-	  // found sc preceded by multiple sc along all paths
-	  // joining at this point 
-	}
-      } else if (ctrl->is_Region() &&
+      
+      if (!find_matching_sc(ctrl) && ctrl->is_Region() &&
                  iter->_worklist.member(ctrl)) {
         // We weren't able to find any opportunities but the region this
         // sc is control dependent on hasn't been processed yet so put
