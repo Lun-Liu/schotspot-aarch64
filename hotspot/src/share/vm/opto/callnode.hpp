@@ -1147,6 +1147,7 @@ public:
   }
 
   bool find_matching_sc(const Node* ctrl, SCNode* sc);
+  bool find_sc_for_region(const RegionNode* region, SCNode* sc);
 
   Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
   Node *   check_node() const  {return in(TypeFunc::Parms + 1); }

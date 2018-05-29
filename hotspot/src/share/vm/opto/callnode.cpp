@@ -1904,10 +1904,13 @@ static Node *next_sc_control(Node *ctrl, Node* obj) {
       break; // found an interesting control
     }
   }
+#ifndef PRODUCT
   tty->print_cr("find control node");
   ctrl->dump();
+#endif
   return ctrl;
 }
+
 
 //
 // Given a control, see if it's the control projection of an SC which
@@ -1926,6 +1929,27 @@ bool SCNode::find_matching_sc(const Node* ctrl, SCNode* sc) {
     }
   }
   return false;
+}
+
+bool SCNode::find_sc_for_region(const RegionNode* region, SCNode* sc) {
+  // check each control merging at this point for a matching sc
+  // in(0) should be self edge so skip it.
+  for (int i = 1; i < (int)region->req(); i++) {
+    Node *in_node = next_sc_control(region->in(i), sc->obj_node());
+    if (in_node != NULL) {
+      if (find_matching_sc(in_node, sc)) {
+        // found a match so keep on checking.
+        continue;
+      } 
+      // If we fall through to here then it was some kind of node we
+      // don't understand or there wasn't a matching unlock, so give
+      // up trying 
+      return false;
+    }
+  }
+  sc->set_eliminated();
+  return true;
+
 }
 
 uint SCNode::size_of() const { return sizeof(*this); }
@@ -1966,6 +1990,11 @@ Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
         // found an SC directly preceding this SC.  This is the
         // case of single SC directly control dependent on a
         // single SC
+      } else if (ctrl->is_Region()){
+        if(find_sc_for_region(ctrl->as_Region(), this)){
+	  // found sc preceded by multiple sc along all paths
+	  // joining at this point 
+	}
       } else if (ctrl->is_Region() &&
                  iter->_worklist.member(ctrl)) {
         // We weren't able to find any opportunities but the region this
