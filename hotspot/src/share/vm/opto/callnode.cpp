@@ -2031,20 +2031,20 @@ Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     //
     // Try coarse checks
     //
-    PhaseIterGVN* iter = phase->is_IterGVN();
-    if (iter != NULL && !is_eliminated()) {
+    //PhaseIterGVN* iter = phase->is_IterGVN();
+    //if (iter != NULL && !is_eliminated()) {
 
-      Node *ctrl = next_sc_control(in(0), obj_node());
-      
-      if (!find_matching_sc(ctrl) && ctrl->is_Region() &&
-                 iter->_worklist.member(ctrl)) {
-        // We weren't able to find any opportunities but the region this
-        // sc is control dependent on hasn't been processed yet so put
-        // this sc back on the worklist so we can check again once any
-        // region simplification has occurred.
-        iter->_worklist.push(this);
-      }
-    }
+    //  Node *ctrl = next_sc_control(in(0), obj_node());
+    //  
+    //  if (!find_matching_sc(ctrl) && ctrl->is_Region() &&
+    //             iter->_worklist.member(ctrl)) {
+    //    // We weren't able to find any opportunities but the region this
+    //    // sc is control dependent on hasn't been processed yet so put
+    //    // this sc back on the worklist so we can check again once any
+    //    // region simplification has occurred.
+    //    iter->_worklist.push(this);
+    //  }
+    //}
   }
 
   return result;

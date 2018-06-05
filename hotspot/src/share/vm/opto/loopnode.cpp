@@ -2120,6 +2120,43 @@ bool PhaseIdealLoop::process_expensive_nodes() {
   return progress;
 }
 
+void PhaseIdealLoop::process_sc_nodes(){
+  Arena* arena = Thread::current()->resource_area();
+  Unique_Node_List useful(arena);
+  C->identify_useful_nodes(useful);
+  Unique_Node_List worklist(arena);
+  for(uint i = 0; i< useful.size();i++){
+    Node* n = useful.at(i);
+    if(n -> is_SC()){
+      worklist.push(n);
+    }
+  }
+  
+  int size = worklist.size();
+
+  //nodes in reversed order
+  Node_List nlist(arena);
+  for(uint i = 0; i < worklist.size(); i++){
+    SCNode* sci = worklist.at(i)->as_SC();
+    if(sci->is_eliminated()) continue;
+    Node* ctrli = sci->in(0);
+    Node* obji = sci->obj_node();
+    for(uint j = i + 1; j < worklist.size(); j++){
+      SCNode* scj = worklist.at(j)->as_SC();
+      Node* ctrlj = scj->in(0);
+      Node* objj = scj->obj_node();
+      if(obji->eqv_uncast(objj) && is_dominator(ctrlj, ctrli)){
+        sci->set_eliminated();
+#ifndef PRODUCT
+	tty->print_cr("mark sc as eliminated");
+	sci->dump();
+#endif
+	break;
+      }
+    }
+  }
+}
+
 
 //=============================================================================
 //----------------------------build_and_optimize-------------------------------
@@ -2371,6 +2408,10 @@ void PhaseIdealLoop::build_and_optimize(bool do_split_ifs, bool skip_loop_opts) 
 
   if (!C->major_progress() && do_expensive_nodes && process_expensive_nodes()) {
     C->set_major_progress();
+  }
+
+  if(OptimizeSCLoop){
+    process_sc_nodes();
   }
 
   // Perform loop predication before iteration splitting

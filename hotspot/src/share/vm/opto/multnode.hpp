@@ -91,6 +91,7 @@ public:
 
   // Return true if proj is for "proj->[region->..]call_uct"
   bool is_uncommon_trap_proj(Deoptimization::DeoptReason reason);
+  bool is_sc_check_proj();
   // Return true for    "if(test)-> proj -> ...
   //                          |
   //                          V

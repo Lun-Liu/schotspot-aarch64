@@ -141,6 +141,9 @@
   product(bool, DynamicCheckOnly, false,                                    \
           "SCDynamic check always succeed, to test the overhead of SCDynamic check.")      \
                                                                             \
+  product(bool, OptimizeSCLoop, true,                                       \
+          "hoist sc checks out of the loop.")                               \
+                                                                            \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \
                                                                             \
