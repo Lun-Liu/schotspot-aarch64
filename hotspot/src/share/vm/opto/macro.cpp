@@ -2135,6 +2135,47 @@ bool PhaseMacroExpand::eliminate_locking_node(AbstractLockNode *alock) {
   return true;
 }
 
+//-------------------mark_eliminated_check----------------------------------
+//
+// During EA obj may point to several objects but after few ideal graph
+// transformations (CCP) it may point to only one non escaping object
+// (but still using phi), corresponding locks and unlocks will be marked
+// for elimination. Later obj could be replaced with a new node (new phi)
+// and which does not have escape information. And later after some graph
+// reshape other scs (which were not marked for elimination
+// before) are connected to this new obj (phi) but they still will not be
+// marked for elimination since new obj has no escape information.
+// Mark all associated (same obj) sc nodes for
+// elimination if some of them marked already.
+void PhaseMacroExpand::mark_eliminated_check(Node* obj) {
+  for (uint i = 0; i < obj->outcnt(); i++) {
+    Node* u = obj->raw_out(i);
+    if (u->is_SC() && !u->as_SC()->is_non_esc_obj()) {
+      SCNode* sc = u->as_SC();
+      sc->set_non_esc_obj();
+    }
+  }
+  return;
+}
+
+//-----------------------mark_eliminated_sc_nodes-----------------------
+void PhaseMacroExpand::mark_eliminated_sc_nodes(SCNode *sc) {
+  if (sc->is_non_esc_obj()) { // Lock is used for non escaping object
+    // Look for all locks of this object and mark them and
+    // corresponding BoxLock nodes as eliminated.
+    Node* obj = sc->obj_node();
+    for (uint j = 0; j < obj->outcnt(); j++) {
+      Node* o = obj->raw_out(j);
+      if (o->is_SC() &&
+          o->as_SC()->obj_node()->eqv_uncast(obj)) {
+        sc = o->as_SC();
+        // Replace old box node with new eliminated box for all users
+        // of the same object and mark related locks as eliminated.
+        mark_eliminated_check(obj);
+      }
+    }
+  }
+}
 
 // we have determined that this SCNode can be eliminated, we simply
 // eliminate the node without expanding it.
@@ -2553,6 +2594,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       // Before elimination mark all associated (same box and obj)
       // lock and unlock nodes.
       mark_eliminated_locking_nodes(n->as_AbstractLock());
+    } else if(n->is_SC()){
+      mark_eliminated_sc_nodes(n->as_SC());
     }
   }
   bool progress = true;

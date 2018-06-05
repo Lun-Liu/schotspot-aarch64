@@ -97,6 +97,8 @@ private:
   void eliminate_card_mark(Node *cm);
   void mark_eliminated_box(Node* box, Node* obj);
   void mark_eliminated_locking_nodes(AbstractLockNode *alock);
+  void mark_eliminated_check(Node* obj);
+  void mark_eliminated_sc_nodes(SCNode *sc);
   bool eliminate_locking_node(AbstractLockNode *alock);
   bool eliminate_sc_node(SCNode *sc);
   void expand_lock_node(LockNode *lock);

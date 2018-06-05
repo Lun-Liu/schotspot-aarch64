@@ -1109,7 +1109,12 @@ public:
 //
 class SCNode : public CallNode {
 private:
-  bool _is_eliminated;
+  enum {
+    Regular = 0,
+    NonEscObj,
+    Eliminated
+  } _kind;
+  //bool _is_eliminated;
 public:
 
   static const TypeFunc *sc_type() {
@@ -1133,7 +1138,7 @@ public:
     init_class_id(Class_SC);
     init_flags(Flag_is_macro);
     C->add_macro_node(this);
-    _is_eliminated = false;
+    _kind = Regular;
   }
   virtual bool        guaranteed_safepoint()  { return false; }
 
@@ -1154,8 +1159,10 @@ public:
   Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
   Node *   check_node() const  {return in(TypeFunc::Parms + 1); }
 
-  bool is_eliminated() {return _is_eliminated; }
-  void set_eliminated() {_is_eliminated = true; }
+  bool is_eliminated() const {return (_kind != Regular); }
+  bool is_non_esc_obj() const {return (_kind == NonEscObj);}
+  void set_eliminated() { _kind = Eliminated;}
+  void set_non_esc_obj() {_kind = NonEscObj; }
 
 };
 

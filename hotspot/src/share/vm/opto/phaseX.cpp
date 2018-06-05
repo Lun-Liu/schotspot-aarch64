@@ -1745,6 +1745,7 @@ Node *PhaseCCP::transform_once( Node *n ) {
   // TEMPORARY fix to ensure that 2nd GVN pass eliminates NULL checks
   switch( n->Opcode() ) {
   case Op_FastLock:      // Revisit FastLocks for lock coarsening
+  case Op_SCCheck:
   case Op_If:
   case Op_CountedLoopEnd:
   case Op_Region:

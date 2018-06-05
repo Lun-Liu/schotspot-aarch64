@@ -1985,19 +1985,16 @@ bool SCNode::find_matching_sc(Node* ctrl){
     // found an SC directly preceding this SC.  This is the
     // case of single SC directly control dependent on a
     // single SC
-    tty->print_cr("check removed");
     return true;
   } else if (ctrl->is_Region()){
     if(find_sc_for_region(ctrl->as_Region())){
       // found sc preceded by multiple sc along all paths
       // joining at this point 
-    tty->print_cr("check removed");
       return true;
     }
   } else if (ctrl->is_IfTrue() || ctrl->is_IfFalse()){
     if(find_sc_through_if(ctrl)){
       // see if there is a sc before this if
-    tty->print_cr("check removed");
       return true;
     }
   } 
@@ -2026,7 +2023,7 @@ Node *SCNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     ConnectionGraph *cgr = phase->C->congraph();
     if (cgr != NULL && cgr->not_global_escape(obj_node())) {
       assert(!is_eliminated(), "sanity");
-      this->set_eliminated();
+      this->set_non_esc_obj();
       return result;
     }
 
