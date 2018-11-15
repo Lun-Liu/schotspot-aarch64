@@ -979,8 +979,6 @@ void TemplateTable::wide_astore() {
 
 void TemplateTable::iastore() {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -991,13 +989,11 @@ void TemplateTable::iastore() {
   __ strw(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_INT)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::lastore() {
   transition(ltos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1008,13 +1004,11 @@ void TemplateTable::lastore() {
   __ str(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_LONG)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::fastore() {
   transition(ftos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1025,13 +1019,11 @@ void TemplateTable::fastore() {
   __ strs(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::dastore() {
   transition(dtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1042,14 +1034,12 @@ void TemplateTable::dastore() {
   __ strd(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   // stack: ..., array, index, value
   __ ldr(r0, at_tos());    // value
   __ ldr(r2, at_tos_p1()); // index
@@ -1099,14 +1089,12 @@ void TemplateTable::aastore() {
   __ bind(done);
   __ add(esp, esp, 3 * Interpreter::stackElementSize);
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::bastore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1129,14 +1117,12 @@ void TemplateTable::bastore()
   __ strb(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_BYTE)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::castore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1147,7 +1133,7 @@ void TemplateTable::castore()
   __ strh(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_CHAR)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::sastore()
@@ -2677,14 +2663,12 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ mov(r5, flags);
 
   {
-    if(SC || SCInter)
-    {
-      __ membar(MacroAssembler::StoreStore);
-    } else {
+    if(!SC&&!SCInter){
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
       __ membar(MacroAssembler::StoreStore);
       __ bind(notVolatile);
+
     }
   }
 
@@ -2847,7 +2831,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreLoad);
+      __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2943,7 +2927,7 @@ void TemplateTable::fast_storefield(TosState state)
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreStore);
+      //__ membar(MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2995,7 +2979,7 @@ void TemplateTable::fast_storefield(TosState state)
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreLoad);
+      __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
