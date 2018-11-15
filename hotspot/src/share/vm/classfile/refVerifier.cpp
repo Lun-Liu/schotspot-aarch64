@@ -730,6 +730,12 @@ void RefVerifier::verify_method(methodHandle m) {
       }  // end switch
     }  // end Merge with the next instruction
   }  // end while
+  if(_common_put_count > 0 || _common_get_count > 0){
+    m->set_has_sc_check();
+  }else {
+    m->clear_has_sc_check();
+    //tty->print_cr("no sc check for method");
+  }
   FREE_RESOURCE_ARRAY(bool, jmp_target, code_length);
 }
 

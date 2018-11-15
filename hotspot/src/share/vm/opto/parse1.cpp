@@ -1217,7 +1217,8 @@ void Parse::do_method_entry() {
 	}
       }
 #endif
-      bool need_check = true;
+      bool need_check = method()->has_sc_check();
+      //tty->print_cr("need_check ? %d", need_check);
       //go all the way up through control node
       //Node* ctrl = control();
       //while(true){

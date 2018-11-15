@@ -1336,6 +1336,7 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   const Address constMethod(rmethod, Method::const_offset());
   const Address access_flags(rmethod, Method::access_flags_offset());
+  const Address sc_check(rmethod, Method::sc_check_offset());
   const Address size_of_parameters(r3,
                                    ConstMethod::size_of_parameters_offset());
   const Address size_of_locals(r3, ConstMethod::size_of_locals_offset());
@@ -1460,6 +1461,10 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
   //for SCDynamic
   {
     Label exec;
+    __ ldrb(rscratch1, sc_check);
+    // TODO: use mask
+    __ cmp(rscratch1, 0x1);
+    __ br(Assembler::NE, exec);
     __ ldrw(r0, access_flags);
     //__ verify_oop(r0);
     __ tst(r0, JVM_ACC_STATIC);
