@@ -1939,6 +1939,55 @@ void Node::verify() const {
 }
 #endif
 
+//------------------------------scwalk-----------------------------------------
+void Node::scwalk(Unique_Node_List& visited, Unique_Node_List& protected_mem, Unique_Node_List& unsure){
+  visited.push(this);
+  if(is_MemBar()){
+    //printf("MemBar Found\n");
+    Unique_Node_List mark_visited;
+    mark_visited.push(this);
+    int max = outcnt();
+    for(int i = 0; i < max; i++){
+      Node* child = raw_out(i);
+      child->mark_following(mark_visited,protected_mem);
+    }
+  }else if(is_Mem()){
+    if(!protected_mem.member(this)){
+      unsure.push(this);
+      printf("Following MemAccess NOT protected by MemBar\n");
+    }else{
+      //printf("Following MemAccess protected by MemBar\n");
+    }
+  }else{
+    int maxcnt = outcnt();
+    for(int i = 0; i < maxcnt; i++){
+      Node* child = raw_out(i);
+      if(!child->is_Root() && !visited.member(child))
+        child->scwalk(visited, protected_mem, unsure);
+    }
+  }
+}
+
+//------------------------------mark_following-----------------------------------------
+void Node::mark_following(Unique_Node_List& mark_visited, Unique_Node_List& protected_mem){
+  mark_visited.push(this);
+  if(is_Mem()){
+    if(!protected_mem.member(this)){
+      protected_mem.push(this);
+      //printf("Add MemAccess protected by MemBar\n");
+    }else{
+      //printf("MemAccess already protected by MemBar\n");
+    }
+  }else{
+    int maxcnt = outcnt();
+    for(int i = 0; i < maxcnt; i++){
+      Node* child = raw_out(i);
+      if(!child->is_Root() && !mark_visited.member(child))
+        child->mark_following(mark_visited, protected_mem);
+    }
+  }
+
+}
 
 //------------------------------walk-------------------------------------------
 // Graph walk, with both pre-order and post-order functions

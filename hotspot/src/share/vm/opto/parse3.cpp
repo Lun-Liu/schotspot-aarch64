@@ -290,8 +290,6 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   if((!SC && !SCComp) || C-> sc_method_skipped() ||is_java_lib )
     is_vol = field -> is_volatile();
 
-
-
   // Compute address and memory type.
   int offset = field->offset_in_bytes();
   const TypePtr* adr_type = C->alias_type(field)->adr_type();
