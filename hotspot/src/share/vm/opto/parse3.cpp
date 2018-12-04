@@ -139,9 +139,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
-      } else { 
-        C->dependencies()->assert_evol_klass(field->holder());
-      }
+      } 
       (void) pop();  // pop receiver before getting
       do_get_xxx(obj, field, is_field, is_direct, is_java_lib);
     } else {
@@ -157,9 +155,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
-      } else { 
-        C->dependencies()->assert_evol_klass(field->holder());
-      }
+      } 
       do_put_xxx(obj, field, is_field, is_direct, is_java_lib);
       (void) pop();  // pop receiver after putting
     }

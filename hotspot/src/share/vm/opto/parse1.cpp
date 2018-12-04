@@ -489,8 +489,6 @@ Parse::Parse(JVMState* caller, ciMethod* parse_method, float expected_uses)
   }
   if(method()->holder()->is_sc_safe())
     C->dependencies()->assert_evol_fast_klass(method() -> holder());
-  else
-    C->dependencies()->assert_evol_klass(method() -> holder());
 
   methods_seen++;
 
@@ -984,6 +982,13 @@ void Parse::do_exits() {
       tty->print_cr(" writes finals and needs a memory barrier");
     }
 #endif
+  }
+
+  const char* hname = C->method()->holder()->name()->as_quoted_ascii();
+  bool is_java_lib = C->sc_klass_skipped(hname);
+  if(SC && SCDynamic && is_java_lib){
+    // this method is skipped, insert a StoreFence in case followed by a non skipped method
+    _exits.insert_mem_bar(Op_StoreFence);
   }
 
   for (MergeMemStream mms(_exits.merged_memory()); mms.next_non_empty(); ) {
