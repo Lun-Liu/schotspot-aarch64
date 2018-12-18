@@ -2688,7 +2688,6 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
 }
 
 void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
-	return;
     //direct field access
     switch (tos) {          // load values into the jvalue object
     case atos: __ push_ptr(r0); break;
