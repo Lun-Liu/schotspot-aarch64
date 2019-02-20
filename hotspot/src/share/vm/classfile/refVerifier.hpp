@@ -51,7 +51,7 @@ class RefVerifier : public StackObj {
 
   void print_statistics(){
     ResourceMark rm;
-    tty->print_cr("[DIRECT STATISTICS]: %s, %d, %d, %d, %d", _klass->internal_name(), _common_get_count, _direct_get_count, _common_put_count, _direct_put_count);
+    tty->print_cr("[DIRECT STATISTICS]: %s, %ld, %ld, %ld, %ld", _klass->internal_name(), _common_get_count, _direct_get_count, _common_put_count, _direct_put_count);
   }
 
 
