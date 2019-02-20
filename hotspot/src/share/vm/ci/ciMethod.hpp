@@ -316,6 +316,7 @@ class ciMethod : public ciMetadata {
   bool can_be_statically_bound() const           { return _can_be_statically_bound; }
   bool is_boxing_method() const;
   bool is_unboxing_method() const;
+  bool has_sc_check()    const;
 
   // Replay data methods
   void dump_name_as_ascii(outputStream* st);

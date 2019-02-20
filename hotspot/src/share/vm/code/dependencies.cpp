@@ -65,6 +65,14 @@ void Dependencies::assert_evol_method(ciMethod* m) {
   assert_common_1(evol_method, m);
 }
 
+void Dependencies::assert_evol_klass(ciKlass* k) {
+  assert_common_1(evol_klass, k);
+}
+
+void Dependencies::assert_evol_fast_klass(ciKlass* k) {
+  assert_common_1(evol_fast_klass, k);
+}
+
 void Dependencies::assert_leaf_type(ciKlass* ctxk) {
   if (ctxk->is_array_klass()) {
     // As a special case, support this assertion on an array type,
@@ -365,6 +373,8 @@ void Dependencies::encode_content_bytes() {
 const char* Dependencies::_dep_name[TYPE_LIMIT] = {
   "end_marker",
   "evol_method",
+  "evol_fast_klass",
+  "evol_klass",
   "leaf_type",
   "abstract_with_unique_concrete_subtype",
   "abstract_with_no_concrete_subtype",
@@ -379,6 +389,8 @@ const char* Dependencies::_dep_name[TYPE_LIMIT] = {
 int Dependencies::_dep_args[TYPE_LIMIT] = {
   -1,// end_marker
   1, // evol_method m
+  1, // evol_fast_klass k
+  1, // evol_klass k
   1, // leaf_type ctxk
   2, // abstract_with_unique_concrete_subtype ctxk, k
   1, // abstract_with_no_concrete_subtype ctxk
@@ -1039,7 +1051,10 @@ Klass* ClassHierarchyWalker::find_witness_in(KlassDepChange& changes,
     return context_type;
   }
 
-  assert(!is_participant(new_type), "only old classes are participants");
+  //assert(!is_participant(new_type), "only old classes are participants");
+  if(!SCDynamic){
+    assert(!is_participant(new_type), "only old classes are participants");
+  }
   if (participants_hide_witnesses) {
     // If the new type is a subtype of a participant, we are done.
     for (int i = 0; i < num_participants(); i++) {
@@ -1247,6 +1262,20 @@ Klass* Dependencies::check_evol_method(Method* m) {
   }
 }
 
+
+// SCDynamic: if during compilation dependent class is not sc_deoptimized 
+// it has to be checked now
+Klass* Dependencies::check_evol_fast_klass(Klass* k) {
+  assert(must_be_in_vm(), "raw oops here");
+  // Did somebody do a JVMTI RedefineClasses while our backs were turned?
+  // Or is there a now a breakpoint?
+  // (Assumes compiled code cannot handle bkpts; change if UseFastBreakpoints.)
+  if(k->oop_is_instance() && InstanceKlass::cast(k)->is_sc_deoptimized()){
+    return k;
+  } else {
+    return NULL;
+  }
+}
 // This is a strong assertion:  It is that the given type
 // has no subtypes whatever.  It is most useful for
 // optimizing checks on reflected types or on array types.
@@ -1514,6 +1543,12 @@ Klass* Dependencies::DepStream::check_klass_dependency(KlassDepChange* changes) 
   case evol_method:
     witness = check_evol_method(method_argument(0));
     break;
+  case evol_klass:
+    witness = NULL;  // be optimistic here for SCDynamic
+    break;
+  case evol_fast_klass:
+    witness = check_evol_fast_klass(type_argument(0));  // check if deoptimized 
+    break;
   case leaf_type:
     witness = check_leaf_type(context_type());
     break;
@@ -1655,7 +1690,7 @@ bool DepChange::ContextStream::next() {
 
 void KlassDepChange::initialize() {
   // entire transaction must be under this lock:
-  assert_lock_strong(Compile_lock);
+  assert_locked_or_safepoint(Compile_lock);
 
   // Mark all dependee and all its superclasses
   // Mark transitive interfaces

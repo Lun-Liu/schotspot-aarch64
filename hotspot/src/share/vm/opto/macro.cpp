@@ -1644,6 +1644,15 @@ PhaseMacroExpand::initialize_object(AllocateNode* alloc,
   }
   rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), mark_node, T_ADDRESS);
 
+  if(length == NULL){
+      // FOR SC HEADER
+      Node* thread = transform_later(new (C) ThreadLocalNode());
+      //Node* cast_thread = transform_later(new (C) CastP2XNode(control, thread));
+      //Node* o_node = transform_later(new (C) OrXNode(cast_thread, sc_mark_node));
+      rawmem = make_store(control, rawmem, object, oopDesc::sc_mark_offset_in_bytes(), thread, T_ADDRESS);
+  }
+
+
   rawmem = make_store(control, rawmem, object, oopDesc::klass_offset_in_bytes(), klass_node, T_METADATA);
   int header_size = alloc->minimum_header_size();  // conservatively small
 
@@ -2126,6 +2135,94 @@ bool PhaseMacroExpand::eliminate_locking_node(AbstractLockNode *alock) {
   return true;
 }
 
+//-------------------mark_eliminated_check----------------------------------
+//
+// During EA obj may point to several objects but after few ideal graph
+// transformations (CCP) it may point to only one non escaping object
+// (but still using phi), corresponding locks and unlocks will be marked
+// for elimination. Later obj could be replaced with a new node (new phi)
+// and which does not have escape information. And later after some graph
+// reshape other scs (which were not marked for elimination
+// before) are connected to this new obj (phi) but they still will not be
+// marked for elimination since new obj has no escape information.
+// Mark all associated (same obj) sc nodes for
+// elimination if some of them marked already.
+void PhaseMacroExpand::mark_eliminated_check(Node* obj) {
+  for (uint i = 0; i < obj->outcnt(); i++) {
+    Node* u = obj->raw_out(i);
+    if (u->is_SC() && !u->as_SC()->is_non_esc_obj()) {
+      SCNode* sc = u->as_SC();
+      sc->set_non_esc_obj();
+    }
+  }
+  return;
+}
+
+//-----------------------mark_eliminated_sc_nodes-----------------------
+void PhaseMacroExpand::mark_eliminated_sc_nodes(SCNode *sc) {
+  if (sc->is_non_esc_obj()) { // Lock is used for non escaping object
+    // Look for all locks of this object and mark them and
+    // corresponding BoxLock nodes as eliminated.
+    Node* obj = sc->obj_node();
+    for (uint j = 0; j < obj->outcnt(); j++) {
+      Node* o = obj->raw_out(j);
+      if (o->is_SC() &&
+          o->as_SC()->obj_node()->eqv_uncast(obj)) {
+        sc = o->as_SC();
+        // Replace old box node with new eliminated box for all users
+        // of the same object and mark related locks as eliminated.
+        mark_eliminated_check(obj);
+      }
+    }
+  }
+}
+
+// we have determined that this SCNode can be eliminated, we simply
+// eliminate the node without expanding it.
+//
+bool PhaseMacroExpand::eliminate_sc_node(SCNode* sc) {
+
+  if (!sc->is_eliminated()) {
+    return false;
+  }
+
+  Node* mem  = sc->in(TypeFunc::Memory);
+  Node* ctrl = sc->in(TypeFunc::Control);
+
+  extract_call_projections(sc);
+  // There are 2 projections from the SCNode.  The SCNode will
+  // be deleted when its last use is subsumed below.
+  assert(sc->outcnt() == 2 &&
+         _fallthroughproj != NULL &&
+         _memproj_fallthrough != NULL,
+         "Unexpected projections from SCNode");
+
+  Node* fallthroughproj = _fallthroughproj;
+  Node* memproj_fallthrough = _memproj_fallthrough;
+
+  // The memory projection from a SCNode is RawMem
+  // The input to a SCNode is merged memory, so extract its RawMem input
+  // (unless the MergeMem has been optimized away.)
+  // Seach for MemBarAcquireLock node and delete it also.
+  MemBarNode* membar = fallthroughproj->unique_ctrl_out()->as_MemBar();
+  assert(membar != NULL && membar->Opcode() == Op_MemBarAcquireLock, "");
+  Node* ctrlproj = membar->proj_out(TypeFunc::Control);
+  Node* memproj = membar->proj_out(TypeFunc::Memory);
+  _igvn.replace_node(ctrlproj, fallthroughproj);
+  _igvn.replace_node(memproj, memproj_fallthrough);
+
+  // Delete FastLock node also if this Lock node is unique user
+  // (a loop peeling may clone a Lock node).
+  Node* sccheck = sc->as_SC()->check_node();
+  if (sccheck->outcnt() == 1) {
+    assert(sccheck->unique_out() == sc, "sanity");
+    _igvn.replace_node(sccheck, top());
+  }
+
+  _igvn.replace_node(fallthroughproj, ctrl);
+  _igvn.replace_node(memproj_fallthrough, mem);
+  return true;
+}
 
 //------------------------------expand_lock_node----------------------
 void PhaseMacroExpand::expand_lock_node(LockNode *lock) {
@@ -2430,8 +2527,61 @@ void PhaseMacroExpand::expand_unlock_node(UnlockNode *unlock) {
   _igvn.replace_node(_memproj_fallthrough, mem_phi);
 }
 
+//------------------------------expand_sc_node----------------------
+void PhaseMacroExpand::expand_sc_node(SCNode *sc) {
+
+  Node* ctrl = sc->in(TypeFunc::Control);
+  Node* mem = sc->in(TypeFunc::Memory);
+  Node* obj = sc->obj_node();
+  Node* check = sc->check_node();
+
+  // Make the merge point
+  Node *region;
+  Node *mem_phi;
+  Node *slow_path;
+
+  region  = new (C) RegionNode(3);
+  // create a Phi for the memory state
+  mem_phi = new (C) PhiNode( region, Type::MEMORY, TypeRawPtr::BOTTOM);
+
+  // Optimize test; set region slot 2
+  slow_path = opt_bits_test(ctrl, region, 2, check, 0, 0);
+  mem_phi->init_req(2, mem);
+
+  // Make slow path call
+  CallNode *call = make_slow_call( (CallNode *) sc, OptoRuntime::complete_sc_handling_Type(), OptoRuntime::complete_sc_handling_Java(), NULL, slow_path, obj, NULL );
+
+  extract_call_projections(call);
+
+  // Slow path can only throw asynchronous exceptions, which are always
+  // de-opted.  So the compiler thinks the slow-call can never throw an
+  // exception.  If it DOES throw an exception we would need the debug
+  // info removed first (since if it throws there is no monitor).
+  assert ( _ioproj_fallthrough == NULL && _ioproj_catchall == NULL &&
+           _memproj_catchall == NULL && _catchallcatchproj == NULL, "Unexpected projection from Lock");
+
+  // Capture slow path
+  // disconnect fall-through projection from call and create a new one
+  // hook up users of fall-through projection to region
+  Node *slow_ctrl = _fallthroughproj->clone();
+  transform_later(slow_ctrl);
+  _igvn.hash_delete(_fallthroughproj);
+  _fallthroughproj->disconnect_inputs(NULL, C);
+  region->init_req(1, slow_ctrl);
+  // region inputs are now complete
+  transform_later(region);
+  _igvn.replace_node(_fallthroughproj, region);
+
+  Node *memproj = transform_later( new(C) ProjNode(call, TypeFunc::Memory) );
+  mem_phi->init_req(1, memproj );
+  transform_later(mem_phi);
+  _igvn.replace_node(_memproj_fallthrough, mem_phi);
+}
+
+
+
 //---------------------------eliminate_macro_nodes----------------------
-// Eliminate scalar replaced allocations and associated locks.
+// Eliminate scalar replaced allocations and associated locks and sc nodes.
 void PhaseMacroExpand::eliminate_macro_nodes() {
   if (C->macro_count() == 0)
     return;
@@ -2444,6 +2594,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       // Before elimination mark all associated (same box and obj)
       // lock and unlock nodes.
       mark_eliminated_locking_nodes(n->as_AbstractLock());
+    } else if(n->is_SC()){
+      mark_eliminated_sc_nodes(n->as_SC());
     }
   }
   bool progress = true;
@@ -2455,6 +2607,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       debug_only(int old_macro_count = C->macro_count(););
       if (n->is_AbstractLock()) {
         success = eliminate_locking_node(n->as_AbstractLock());
+      } else if(n -> is_SC()){
+        success = eliminate_sc_node(n->as_SC());
       }
       assert(success == (C->macro_count() < old_macro_count), "elimination reduces macro count");
       progress = progress || success;
@@ -2481,6 +2635,8 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
       case Node::Class_Unlock:
         assert(!n->as_AbstractLock()->is_eliminated(), "sanity");
         _has_locks = true;
+        break;
+      case Node::Class_SC:
         break;
       default:
         assert(n->Opcode() == Op_LoopLimit ||
@@ -2580,6 +2736,9 @@ bool PhaseMacroExpand::expand_macro_nodes() {
       break;
     case Node::Class_Unlock:
       expand_unlock_node(n->as_Unlock());
+      break;
+    case Node::Class_SC:
+      expand_sc_node(n->as_SC());
       break;
     default:
       assert(false, "unknown node type in macro list");

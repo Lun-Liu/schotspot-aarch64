@@ -498,6 +498,14 @@ class SharedRuntime: AllStatic {
   static void complete_monitor_locking_C(oopDesc* obj, BasicLock* lock, JavaThread* thread);
   static void complete_monitor_unlocking_C(oopDesc* obj, BasicLock* lock);
 
+  // Slow-path SC handling
+  static void complete_sc_handling_C(oopDesc* obj, JavaThread* thread);
+
+  // Force SC deopt from interpreter
+  static void SC_handling_Interp(JavaThread* thread, oopDesc* obj, Method* m);
+  static void SC_handling_Interp_direct(JavaThread* thread, oopDesc* obj);
+
+
   // Resolving of calls
   static address resolve_static_call_C     (JavaThread *thread);
   static address resolve_virtual_call_C    (JavaThread *thread);

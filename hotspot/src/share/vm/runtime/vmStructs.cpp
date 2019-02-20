@@ -196,6 +196,7 @@
 #include "opto/parse.hpp"
 #include "opto/regalloc.hpp"
 #include "opto/rootnode.hpp"
+#include "opto/scnode.hpp"
 #include "opto/subnode.hpp"
 #include "opto/vectornode.hpp"
 #if defined ADGLOBALS_MD_HPP
@@ -1769,6 +1770,8 @@ typedef TwoOopHashtable<Symbol*, mtClass>     SymbolTwoOopHashtable;
   declare_c2_type(AllocateArrayNode, AllocateNode)                        \
   declare_c2_type(LockNode, AbstractLockNode)                             \
   declare_c2_type(UnlockNode, AbstractLockNode)                           \
+  declare_c2_type(SCNode, CallNode)                                       \
+  declare_c2_type(SCCheckNode, CmpNode)                                   \
   declare_c2_type(FastLockNode, CmpNode)                                  \
   declare_c2_type(FastUnlockNode, CmpNode)                                \
   declare_c2_type(RegionNode, Node)                                       \

@@ -2069,6 +2069,14 @@ void SystemDictionary::update_dictionary(int d_index, unsigned int d_hash,
     }
   }
 
+  if(SCDynamic){
+    if(k->class_loader() == class_loader() ){
+      assert(k->oop_is_instance(), "must be instance klass");
+      k -> set_sc_safe();
+    }
+  }
+
+
   // Make a new system dictionary entry.
   Klass* sd_check = find_class(d_index, d_hash, name, loader_data);
   if (sd_check == NULL) {

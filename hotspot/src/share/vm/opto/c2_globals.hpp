@@ -131,9 +131,21 @@
           "Seperate flag for SC in compiler mode.")                         \
   product(ccstrlist, SCSkipMethod, "",                                               \
           "skip inserting fences for certain method, specified by format class::method, class::method,...")      \
-                                                                            \
+  product(ccstrlist, SCSkipKlass, "",                                               \
+          "skip inserting fences for certain klass (for SCDynamic), specified by format xx/xxx, xx/xxx,...")      \
   product(bool, AggresiveMemBar, false,                                     \
           "optimize membar for scalar repeacable objects.")                 \
+  product(bool, SCDynamic, false,                                           \
+          "Using dynamic conflict detection for SC.")                       \
+                                                                            \
+  product(bool, OptimizeSCDynamic, false,                                   \
+          "Using dynamic conflict detection for SC.")                       \
+                                                                            \
+  product(bool, DynamicCheckOnly, false,                                    \
+          "SCDynamic check always succeed, to test the overhead of SCDynamic check.")      \
+                                                                            \
+  product(bool, OptimizeSCLoop, true,                                       \
+          "hoist sc checks out of the loop.")                               \
                                                                             \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \

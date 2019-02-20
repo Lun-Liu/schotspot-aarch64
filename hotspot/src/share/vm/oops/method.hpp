@@ -104,6 +104,7 @@ class Method : public Metadata {
   AccessFlags       _access_flags;               // Access flags
   int               _vtable_index;               // vtable index of this method (see VtableIndexFlag)
                                                  // note: can have vtables with >2**16 elements (because of inheritance)
+  bool              _has_sc_check;
   u2                _method_size;                // size of this object
   u1                _intrinsic_id;               // vmSymbols::intrinsic_id (0 == _none)
   u1                _jfr_towrite          : 1,   // Flags
@@ -595,6 +596,18 @@ class Method : public Metadata {
     return access_flags().loops_flag_init() ? access_flags().has_loops() : compute_has_loops_flag();
   };
 
+  bool has_sc_check() {
+    return _has_sc_check; 
+  }
+
+  void set_has_sc_check() {
+    _has_sc_check = true;
+  }
+
+  void clear_has_sc_check() {
+    _has_sc_check = false;
+  }
+
   bool compute_has_loops_flag();
 
   bool has_jsrs() {
@@ -648,6 +661,7 @@ class Method : public Metadata {
   // interpreter support
   static ByteSize const_offset()                 { return byte_offset_of(Method, _constMethod       ); }
   static ByteSize access_flags_offset()          { return byte_offset_of(Method, _access_flags      ); }
+  static ByteSize sc_check_offset()              { return byte_offset_of(Method, _has_sc_check      ); }
   static ByteSize from_compiled_offset()         { return byte_offset_of(Method, _from_compiled_entry); }
   static ByteSize code_offset()                  { return byte_offset_of(Method, _code); }
   static ByteSize method_data_offset()           {

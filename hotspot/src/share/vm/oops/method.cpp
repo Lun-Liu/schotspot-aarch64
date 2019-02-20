@@ -85,6 +85,7 @@ Method::Method(ConstMethod* xconst, AccessFlags access_flags, int size) {
   set_constMethod(xconst);
   set_access_flags(access_flags);
   set_method_size(size);
+  set_has_sc_check();
   set_intrinsic_id(vmIntrinsics::_none);
   set_jfr_towrite(false);
   set_force_inline(false);

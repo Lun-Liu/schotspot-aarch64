@@ -507,6 +507,7 @@ class Compile : public Phase {
 
  public:
   bool sc_method_skipped() const;
+  bool sc_klass_skipped(const char* hname) const;
   // Accessors
 
   // The Compile instance currently active in this (compiler) thread.

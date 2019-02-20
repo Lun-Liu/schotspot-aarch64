@@ -47,6 +47,7 @@
   template(ForceSafepoint)                        \
   template(ForceAsyncSafepoint)                   \
   template(Deoptimize)                            \
+  template(SC_Deoptimize)                         \
   template(DeoptimizeFrame)                       \
   template(DeoptimizeAll)                         \
   template(ZombieAll)                             \
@@ -246,6 +247,15 @@ class VM_Deoptimize: public VM_Operation {
   bool allow_nested_vm_operations() const        { return true; }
 };
 
+class VM_SC_Deoptimize: public VM_Operation {
+ private:
+  instanceKlassHandle _ik;
+ public:
+  VM_SC_Deoptimize(instanceKlassHandle ik) {_ik = ik; }
+  VMOp_Type type() const                        { return VMOp_SC_Deoptimize; }
+  void doit();
+  bool allow_nested_vm_operations() const        { return true; }
+};
 
 // Deopt helper that can deoptimize frames in threads other than the
 // current thread.  Only used through Deoptimization::deoptimize_frame.

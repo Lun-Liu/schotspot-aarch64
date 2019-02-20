@@ -862,6 +862,10 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
   if (failing())  return;
   NOT_PRODUCT( verify_graph_edges(); )
 
+  //if(!failing() && OptimizeSCDynamic){
+  //  PhaseRemoveSC();
+  //}
+
   if(SCVerify)
     Verify_SC();
 
@@ -3780,6 +3784,13 @@ bool Compile::sc_method_skipped() const {
   }
 }
 
+bool Compile::sc_klass_skipped(const char* hname) const{
+  if(strstr(SCSkipKlass, hname) != NULL){
+    return true;
+  } else {
+    return false; 
+  }
+}
 
 //=============================================================================
 // Two Constant's are equal when the type and the value are equal.

@@ -1745,6 +1745,7 @@ Node *PhaseCCP::transform_once( Node *n ) {
   // TEMPORARY fix to ensure that 2nd GVN pass eliminates NULL checks
   switch( n->Opcode() ) {
   case Op_FastLock:      // Revisit FastLocks for lock coarsening
+  case Op_SCCheck:
   case Op_If:
   case Op_CountedLoopEnd:
   case Op_Region:
@@ -1785,6 +1786,69 @@ void PhaseCCP::print_statistics() {
   tty->print_cr("CCP: %d  constants found: %d", _total_invokes, _total_constants);
 }
 #endif
+
+PhaseRemoveSC::PhaseRemoveSC( PhaseNumber phase_num )
+  : Phase(phase_num) {
+  _count_init = 0;
+  _count_after = 0;
+  Unique_Node_List useful(Thread::current()->resource_area());
+  C->identify_useful_nodes(useful);
+  Unique_Node_List worklist(Thread::current()->resource_area());
+  for(uint i = 0; i< useful.size();i++){
+    Node* n = useful.at(i);
+    if(n -> is_SCCheck() || n-> is_CallDynamicJava()){
+      worklist.push(n);
+    }
+  }
+  
+  _count_init = worklist.size();
+
+  Node_List nlist(Thread::current()->resource_area());
+  for(uint i = 0; i < worklist.size(); i++){
+    int adjust_i = 0;
+    Node* ni = worklist.at(i);
+    Node* ni_control = NULL;
+    Node* ni_obj = NULL;
+    if(ni->is_SCCheck()){
+      ni_control = ni->in(0);
+      ni_obj = ni->in(2);   //Input2 is the uncasted obj
+    }else{
+      //cass Callnode
+      ni_control = ni->in(TypeFunc::Control);
+      ni_obj = ni->in(TypeFunc::Parms + 0) -> uncast(); //obj
+    }
+    for(uint j = 0; j < worklist.size(); j++){
+      if(i == j)
+        continue;
+      Node* nj = worklist.at(j);
+      Node* nj_control = NULL;
+      Node* nj_obj = NULL;
+      if(nj->is_SCCheck()){
+        nj_control = nj->in(0);
+        nj_obj = nj->in(2);   //Input2 is the uncasted obj
+      }else{
+        //cass Callnode
+        nj_control = nj->in(TypeFunc::Control);
+        nj_obj = nj->in(TypeFunc::Parms + 0) -> uncast(); //obj
+      }
+      if((ni_obj == nj_obj) && (ni_control->dominates(nj_control, nlist))){
+        //TODO: THIS IS NOT CORRECT. Node::dominates() only checks for one path
+        // so this is overly optimistic
+        //nj can be removed
+        worklist.remove(j);
+        if(j < i){
+          adjust_i++;
+        }
+        j--;    //Unique_Node_List.remove moves the last element to here.
+      }
+    }
+    i-=adjust_i;
+  }
+
+  _count_after = worklist.size();
+  print_statistics();
+}
+
 
 
 //=============================================================================

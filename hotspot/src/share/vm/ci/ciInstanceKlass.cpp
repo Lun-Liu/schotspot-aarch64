@@ -55,6 +55,7 @@ ciInstanceKlass::ciInstanceKlass(KlassHandle h_k) :
   _has_finalizer = access_flags.has_finalizer();
   _has_subklass = ik->subklass() != NULL;
   _init_state = ik->init_state();
+  _sc_safe = ik -> is_sc_safe();
   _nonstatic_field_size = ik->nonstatic_field_size();
   _has_nonstatic_fields = ik->has_nonstatic_fields();
   _has_default_methods = ik->has_default_methods();
@@ -97,6 +98,7 @@ ciInstanceKlass::ciInstanceKlass(ciSymbol* name,
 {
   assert(name->byte_at(0) != '[', "not an instance klass");
   _init_state = (InstanceKlass::ClassState)0;
+  _sc_safe = true;
   _nonstatic_field_size = -1;
   _has_nonstatic_fields = false;
   _nonstatic_fields = NULL;
@@ -118,6 +120,16 @@ void ciInstanceKlass::compute_shared_init_state() {
     _init_state = ik->init_state();
   )
 }
+
+// ------------------------------------------------------------------
+// ciInstanceKlass::compute_sc_state
+void ciInstanceKlass::compute_sc_state() {
+  GUARDED_VM_ENTRY(
+    InstanceKlass* ik = get_instanceKlass();
+    _sc_safe = ik -> is_sc_safe();
+  )
+}
+
 
 // ------------------------------------------------------------------
 // ciInstanceKlass::compute_shared_has_subklass

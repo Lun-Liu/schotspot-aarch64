@@ -586,6 +586,8 @@ protected:
   bool has_miranda_methods () const     { return access_flags().has_miranda_methods(); }
   void set_has_miranda_methods()        { _access_flags.set_has_miranda_methods(); }
 
+ 
+
   // Biased locking support
   // Note: the prototype header is always set up to be at least the
   // prototype markOop. If biased locking is enabled it may further be

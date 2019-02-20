@@ -1321,6 +1321,7 @@ bool ciMethod::has_loops      () const {         FETCH_FLAG_FROM_VM(has_loops); 
 bool ciMethod::has_jsrs       () const {         FETCH_FLAG_FROM_VM(has_jsrs);  }
 bool ciMethod::is_accessor    () const {         FETCH_FLAG_FROM_VM(is_accessor); }
 bool ciMethod::is_initializer () const {         FETCH_FLAG_FROM_VM(is_initializer); }
+bool ciMethod::has_sc_check   () const {         FETCH_FLAG_FROM_VM(has_sc_check); }
 
 bool ciMethod::is_boxing_method() const {
   if (holder()->is_box_klass()) {

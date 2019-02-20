@@ -1852,6 +1852,89 @@ JRT_LEAF(void, SharedRuntime::reguard_yellow_pages())
 JRT_END
 
 
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, JavaThread* thread))
+  //printf("%s\n", "SC handling C [Compiler]");
+  oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
+  Klass* k = obj->klass();
+  instanceKlassHandle ik(thread,k);
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] SC Deopt triggered by %s, is_sc_deoptimized %d", Thread::current(), ik->internal_name(),ik->is_sc_deoptimized());
+#endif
+  if(ik->is_sc_deoptimized()){
+#ifndef PRODUCT
+  vframeStream vfst(thread, true);
+  Method* m = vfst.method();
+  int bci = vfst.bci();
+  tty->print_cr("[%p] Cur Method %s at bci %d", Thread::current(), m->name_and_sig_as_C_string(),bci);
+#endif
+    return;
+  }
+#ifndef PRODUCT
+  tty->print_cr("[%p] SC Deopt triggered by %s, JavaThread %p, creator thread %p", Thread::current(), ik->internal_name(), thread, obj->sc_mark()->owner_thread());
+#endif
+  ik->set_sc_deoptimized();
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, oopDesc* _obj, Method* m))
+  if(_obj->is_array()){
+    return;
+  }
+  MutexLocker mu(Compile_lock, thread);
+  oop obj(_obj);
+  Klass* k = obj->klass();
+  instanceKlassHandle ik(thread,k);
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp: is %s sc_deoptimized - %d", Thread::current(), ik->internal_name(), ik->is_sc_deoptimized() );
+#endif
+  if(ik->is_sc_deoptimized()){
+    return;
+  }
+#ifndef PRODUCT
+  //ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp triggered by method %s", Thread::current(), m->name_and_sig_as_C_string());
+#endif
+  ik->set_sc_deoptimized();
+#ifndef PRODUCT
+  tty->print_cr("[%p] sc handling interp: %s set sc_deoptimized", Thread::current(), ik->internal_name() );
+#endif
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
+// for sc
+JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* thread, oopDesc* _obj))
+  //printf("%s\n", m->name_and_sig_as_C_string());
+  if(_obj->is_array()){
+    return;
+  }
+  oop obj(_obj);
+  MutexLocker mu(Compile_lock, thread);
+  Klass* k = obj->klass();
+  instanceKlassHandle ik(thread,k);
+  if(ik->is_sc_deoptimized()){
+    return;
+  }
+#ifndef PRODUCT
+  ResourceMark rm;
+  tty->print_cr("[%p] sc handling interp direct triggered on klass %s", Thread::current(), k->internal_name());
+#endif
+  ik->set_sc_deoptimized();
+  VM_SC_Deoptimize op(ik);
+  VMThread::execute(&op);
+  assert(!HAS_PENDING_EXCEPTION, "Should have no exception here");
+JRT_END
+
+
+
 // Handles the uncommon case in locking, i.e., contention or an inflated lock.
 #ifndef PRODUCT
 int SharedRuntime::_monitor_enter_ctr=0;

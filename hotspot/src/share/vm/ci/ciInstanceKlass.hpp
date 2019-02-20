@@ -48,6 +48,7 @@ private:
   jobject                _protection_domain;
 
   InstanceKlass::ClassState _init_state;           // state of class
+  bool                   _sc_safe;
   bool                   _is_shared;
   bool                   _has_finalizer;
   bool                   _has_subklass;
@@ -98,6 +99,7 @@ protected:
   bool is_shared() { return _is_shared; }
 
   void compute_shared_init_state();
+  void compute_sc_state();
   bool compute_shared_has_subklass();
   int  compute_nonstatic_fields();
   GrowableArray<ciField*>* compute_nonstatic_fields_impl(GrowableArray<ciField*>* super_fields);
@@ -125,6 +127,14 @@ public:
     update_if_shared(InstanceKlass::linked);
     return _init_state >= InstanceKlass::linked;
   }
+
+  bool                   is_sc_safe(){
+    if(!_sc_safe)
+        return false;
+    compute_sc_state();
+    return _sc_safe;
+  }
+
 
   // General klass information.
   ciFlags                flags()          {

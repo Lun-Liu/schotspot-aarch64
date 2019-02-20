@@ -979,8 +979,6 @@ void TemplateTable::wide_astore() {
 
 void TemplateTable::iastore() {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -991,13 +989,11 @@ void TemplateTable::iastore() {
   __ strw(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_INT)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::lastore() {
   transition(ltos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1008,13 +1004,11 @@ void TemplateTable::lastore() {
   __ str(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_LONG)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::fastore() {
   transition(ftos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1025,13 +1019,11 @@ void TemplateTable::fastore() {
   __ strs(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::dastore() {
   transition(dtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1042,14 +1034,12 @@ void TemplateTable::dastore() {
   __ strd(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   // stack: ..., array, index, value
   __ ldr(r0, at_tos());    // value
   __ ldr(r2, at_tos_p1()); // index
@@ -1099,14 +1089,12 @@ void TemplateTable::aastore() {
   __ bind(done);
   __ add(esp, esp, 3 * Interpreter::stackElementSize);
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::bastore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1129,14 +1117,12 @@ void TemplateTable::bastore()
   __ strb(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_BYTE)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::castore()
 {
   transition(itos, vtos);
-  if(SC || SCInter)
-    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1147,7 +1133,7 @@ void TemplateTable::castore()
   __ strh(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_CHAR)));
   if(SC || SCInter)
-    __ membar(MacroAssembler::StoreLoad);
+    __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
 }
 
 void TemplateTable::sastore()
@@ -2305,6 +2291,8 @@ void TemplateTable::resolve_cache_and_index(int byte_no,
   case Bytecodes::_putstatic:
   case Bytecodes::_getfield:
   case Bytecodes::_putfield:
+  case Bytecodes::_direct_getfield:
+  case Bytecodes::_direct_putfield:
     entry = CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_get_put);
     break;
   case Bytecodes::_invokevirtual:
@@ -2441,7 +2429,7 @@ void TemplateTable::pop_and_check_object(Register r)
   __ verify_oop(r);
 }
 
-void TemplateTable::getfield_or_static(int byte_no, bool is_static)
+void TemplateTable::getfield_or_static(int byte_no, bool is_static, bool rewrite)
 {
   const Register cache = r2;
   const Register index = r3;
@@ -2457,6 +2445,11 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   if (!is_static) {
     // obj is on the stack
     pop_and_check_object(obj);
+  }
+
+  if(!rewrite && !is_static)
+  { //direct field access
+    check_sc_conflict_get(obj);
   }
 
   const Address field(obj, off);
@@ -2475,7 +2468,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ load_signed_byte(r0, field);
   __ push(btos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_bgetfield, bc, r1);
   }
   __ b(Done);
@@ -2488,7 +2481,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ ldrsb(r0, field);
   __ push(ztos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     // use btos rewriting, no truncating to t/f bit is needed for getfield.
     patch_bytecode(Bytecodes::_fast_bgetfield, bc, r1);
   }
@@ -2500,7 +2493,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   // atos
   __ load_heap_oop(r0, field);
   __ push(atos);
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_agetfield, bc, r1);
   }
   __ b(Done);
@@ -2512,7 +2505,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ ldrw(r0, field);
   __ push(itos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_igetfield, bc, r1);
   }
   __ b(Done);
@@ -2524,7 +2517,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ load_unsigned_short(r0, field);
   __ push(ctos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_cgetfield, bc, r1);
   }
   __ b(Done);
@@ -2536,7 +2529,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ load_signed_short(r0, field);
   __ push(stos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_sgetfield, bc, r1);
   }
   __ b(Done);
@@ -2548,7 +2541,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ ldr(r0, field);
   __ push(ltos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_lgetfield, bc, r1);
   }
   __ b(Done);
@@ -2560,7 +2553,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ ldrs(v0, field);
   __ push(ftos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_fgetfield, bc, r1);
   }
   __ b(Done);
@@ -2574,7 +2567,7 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ ldrd(v0, field);
   __ push(dtos);
   // Rewrite bytecode to be faster
-  if (!is_static) {
+  if (!is_static && rewrite) {
     patch_bytecode(Bytecodes::_fast_dgetfield, bc, r1);
   }
 #ifdef ASSERT
@@ -2590,15 +2583,18 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static)
   __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
+void TemplateTable::getfield_direct(int byte_no) {
+  getfield_or_static(byte_no, false, false);
+}
 
 void TemplateTable::getfield(int byte_no)
 {
-  getfield_or_static(byte_no, false);
+  getfield_or_static(byte_no, false, true);
 }
 
 void TemplateTable::getstatic(int byte_no)
 {
-  getfield_or_static(byte_no, true);
+  getfield_or_static(byte_no, true, true);
 }
 
 // The registers cache and index expected to be set before call.
@@ -2659,7 +2655,98 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
   }
 }
 
-void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
+void TemplateTable::check_sc_conflict_get(Register obj) {
+    //direct field access
+    __ push_ptr(r0);
+    __ push_ptr(obj); //saves value in case call_VM changes value
+    Label exec;
+    // not static method
+    // get receiver (this pointer)
+    __ mov(r0, obj);
+    __ load_klass(r0, r0);
+    // TODO: should assert InstanceKlass, assume it to be right now
+    __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
+    // TODO: use mask
+    __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
+    __ br(Assembler::NE, exec);
+    // scSafe here, get curthread and compare
+    __ mov(r0, obj);
+    Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
+    __ ldr(r0, mark_addr);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
+    __ br(Assembler::EQ, exec);
+    //Deopt here
+    __ mov(r0, obj);
+    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp_direct), r0);
+
+    __ bind(exec);
+    __ pop_ptr(obj);
+    __ pop_ptr(r0);
+}
+
+void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
+    //direct field access
+    switch (tos) {          // load values into the jvalue object
+    case atos: __ push_ptr(r0); break;
+    case btos: // fall through
+    case ztos: // fall through
+    case stos: // fall through
+    case ctos: // fall through
+    case itos: __ push_i(r0); break;
+    case dtos: __ push_d(); break;
+    case ftos: __ push_f(); break;
+    case ltos: __ push_l(r0); break;
+
+    default:
+      ShouldNotReachHere();
+    }
+    __ push_ptr(obj); //saves value in case call_VM changes value
+    Label exec;
+    // not static method
+    // get receiver (this pointer)
+    __ mov(r0, obj);
+    __ load_klass(r0, r0);
+    // TODO: should assert InstanceKlass, assume it to be right now
+    __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
+    // TODO: use mask
+    __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
+    __ br(Assembler::NE, exec);
+    // scSafe here, get curthread and compare
+    __ mov(r0, obj);
+    Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
+    __ ldr(r0, mark_addr);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
+    __ br(Assembler::EQ, exec);
+    // Deopt here
+    __ mov(r0, obj);
+    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp_direct), r0);
+
+    __ bind(exec);
+
+    __ pop_ptr(obj);
+    switch (tos) {          // load values into the jvalue object
+    case atos: __ pop_ptr(r0); break;
+    case btos: // fall through
+    case ztos: // fall through
+    case stos: // fall through
+    case ctos: // fall through
+    case itos: __ pop_i(r0); break;
+    case dtos: __ pop_d(); break;
+    case ftos: __ pop_f(); break;
+    case ltos: __ pop_l(r0); break;
+
+    default:
+      ShouldNotReachHere();
+    }
+}
+
+void TemplateTable::putfield_or_static(int byte_no, bool is_static, bool rewrite) {
   transition(vtos, vtos);
 
   const Register cache = r2;
@@ -2677,14 +2764,12 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ mov(r5, flags);
 
   {
-    if(SC || SCInter)
-    {
-      __ membar(MacroAssembler::StoreStore);
-    } else {
+    if(!SC&&!SCInter){
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
       __ membar(MacroAssembler::StoreStore);
       __ bind(notVolatile);
+
     }
   }
 
@@ -2705,8 +2790,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(btos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, btos);
     __ strb(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_bputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2720,9 +2806,10 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(ztos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, ztos);
     __ andw(r0, r0, 0x1);
     __ strb(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_zputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2736,9 +2823,10 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(atos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, atos);
     // Store into the field
     do_oop_store(_masm, field, r0, _bs->kind(), false);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_aputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2752,8 +2840,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(itos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, itos);
     __ strw(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_iputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2767,8 +2856,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(ctos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, ctos);
     __ strh(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_cputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2782,8 +2872,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(stos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, stos);
     __ strh(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_sputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2797,8 +2888,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(ltos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, ltos);
     __ str(r0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_lputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2812,8 +2904,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(ftos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, ftos);
     __ strs(v0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_fputfield, bc, r1, true, byte_no);
     }
     __ b(Done);
@@ -2829,8 +2922,9 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     __ pop(dtos);
     if (!is_static) pop_and_check_object(obj);
+    if (!is_static && !rewrite) check_sc_conflict_put(obj, dtos);
     __ strd(v0, field);
-    if (!is_static) {
+    if (!is_static && rewrite) {
       patch_bytecode(Bytecodes::_fast_dputfield, bc, r1, true, byte_no);
     }
   }
@@ -2847,7 +2941,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreLoad);
+      __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2857,13 +2951,18 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   }
 }
 
+void TemplateTable::putfield_direct(int byte_no) {
+  putfield_or_static(byte_no, false, false);
+}
+
+
 void TemplateTable::putfield(int byte_no)
 {
-  putfield_or_static(byte_no, false);
+  putfield_or_static(byte_no, false, true);
 }
 
 void TemplateTable::putstatic(int byte_no) {
-  putfield_or_static(byte_no, true);
+  putfield_or_static(byte_no, true, true);
 }
 
 void TemplateTable::jvmti_post_fast_field_mod()
@@ -2943,7 +3042,7 @@ void TemplateTable::fast_storefield(TosState state)
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreStore);
+      //__ membar(MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2995,7 +3094,7 @@ void TemplateTable::fast_storefield(TosState state)
   {
     if(SC || SCInter)
     {
-      __ membar(MacroAssembler::StoreLoad);
+      __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
     } else {
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -3536,6 +3635,11 @@ void TemplateTable::_new() {
     } else {
       __ mov(rscratch1, (intptr_t)markOopDesc::prototype());
     }
+
+
+    // FOR SC HEADER
+    __ str(rthread, Address(r0, oopDesc::sc_mark_offset_in_bytes()));
+
     __ str(rscratch1, Address(r0, oopDesc::mark_offset_in_bytes()));
     __ store_klass_gap(r0, zr);  // zero klass gap for compressed oops
     __ store_klass(r0, r4);      // store klass last

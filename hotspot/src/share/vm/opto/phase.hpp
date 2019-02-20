@@ -42,6 +42,7 @@ public:
   enum PhaseNumber {
     Compiler,                         // Top-level compiler phase
     Parser,                           // Parse bytecodes
+    Remove_SC,                        // Count redundant SC Checks
     Remove_Useless,                   // Remove useless nodes
     Remove_Useless_And_Renumber_Live, // First, remove useless nodes from the graph. Then, renumber live nodes.
     Optimistic,                       // Optimistic analysis phase

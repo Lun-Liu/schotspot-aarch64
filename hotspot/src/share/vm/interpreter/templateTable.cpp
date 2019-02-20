@@ -519,6 +519,8 @@ void TemplateTable::initialize() {
   def(Bytecodes::_fast_aldc_w         , ubcp|____|clvm|____, vtos, atos, fast_aldc           ,  true        );
 
   def(Bytecodes::_return_register_finalizer , ____|disp|clvm|____, vtos, vtos, _return       ,  vtos        );
+  def(Bytecodes::_direct_getfield            , ubcp|____|clvm|____, vtos, vtos, getfield_direct            , f1_byte      );
+  def(Bytecodes::_direct_putfield            , ubcp|____|clvm|____, vtos, vtos, putfield_direct            , f2_byte      );
 
   def(Bytecodes::_invokehandle        , ubcp|disp|clvm|____, vtos, vtos, invokehandle        , f1_byte      );
 

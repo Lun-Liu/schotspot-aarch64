@@ -39,6 +39,7 @@ typedef juint  narrowKlass;
 
 typedef void* OopOrNarrowOopStar;
 typedef class   markOopDesc*                markOop;
+typedef class   scOopDesc*                  scOop;
 
 #ifndef CHECK_UNHANDLED_OOPS
 
@@ -127,6 +128,7 @@ public:
   operator intptr_t* () const         { return (intptr_t*)obj(); }
   operator PromotedObject* () const   { return (PromotedObject*)obj(); }
   operator markOop () const           { return markOop(obj()); }
+  operator scOop () const             { return scOop(obj()); }
 
   operator address   () const         { return (address)obj(); }
 

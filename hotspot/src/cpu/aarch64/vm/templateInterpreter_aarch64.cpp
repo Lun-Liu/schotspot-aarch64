@@ -1336,6 +1336,7 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   const Address constMethod(rmethod, Method::const_offset());
   const Address access_flags(rmethod, Method::access_flags_offset());
+  const Address sc_check(rmethod, Method::sc_check_offset());
   const Address size_of_parameters(r3,
                                    ConstMethod::size_of_parameters_offset());
   const Address size_of_locals(r3, ConstMethod::size_of_locals_offset());
@@ -1456,6 +1457,44 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
     }
 #endif
   }
+
+  //for SCDynamic
+  {
+    Label exec;
+    __ ldrb(rscratch1, sc_check);
+    // TODO: use mask
+    __ cmp(rscratch1, 0x1);
+    __ br(Assembler::NE, exec);
+    __ ldrw(r0, access_flags);
+    //__ verify_oop(r0);
+    __ tst(r0, JVM_ACC_STATIC);
+    __ br(Assembler::NE, exec);
+    // not static method
+    // get receiver (this pointer)
+    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    __ verify_oop(r0);
+    __ load_klass(r0, r0);
+    //TODO: verify klass
+    __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
+    // TODO: use mask
+    __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
+    __ br(Assembler::NE, exec);
+    // scSafe here, get curthread and compare
+    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    Address mark_addr (r0, oopDesc::sc_mark_offset_in_bytes());
+    __ ldr(r0, mark_addr);
+    if(DynamicCheckOnly)
+      __ cmp(r0, r0);
+    else
+      __ cmp(r0, rthread);
+    __ br(Assembler::EQ, exec);
+    //// TODO: Deopt here
+    __ ldr(r0, Address(rlocals, Interpreter::local_offset_in_bytes(0)));
+    __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp), r0, rmethod);
+
+    __ bind(exec);
+  }
+
 
   // start execution
 #ifdef ASSERT

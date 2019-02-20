@@ -1784,16 +1784,22 @@ void Parse::do_one_bytecode() {
     break;
   }
   case Bytecodes::_getfield:
-    do_getfield();
+  {
+    Bytecodes::Code raw_bc = iter().cur_bc_raw();
+    do_getfield(Bytecodes::is_direct_field_access(raw_bc));
     break;
+  }
 
   case Bytecodes::_getstatic:
     do_getstatic();
     break;
 
   case Bytecodes::_putfield:
-    do_putfield();
+  {
+    Bytecodes::Code raw_bc = iter().cur_bc_raw();
+    do_putfield(Bytecodes::is_direct_field_access(raw_bc));
     break;
+  }
 
   case Bytecodes::_putstatic:
     do_putstatic();

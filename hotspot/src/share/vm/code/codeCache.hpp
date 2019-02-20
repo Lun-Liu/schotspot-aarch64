@@ -173,6 +173,8 @@ class CodeCache : AllStatic {
 
   // Deoptimization
   static int  mark_for_deoptimization(DepChange& changes);
+  static int  mark_for_sc_deoptimization(DepChange& changes);
+  static int  mark_for_sc_deoptimization(instanceKlassHandle dependee);
 #ifdef HOTSWAP
   static int  mark_for_evol_deoptimization(instanceKlassHandle dependee);
 #endif // HOTSWAP

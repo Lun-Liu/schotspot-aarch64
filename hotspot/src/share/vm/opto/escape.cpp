@@ -325,7 +325,6 @@ bool ConnectionGraph::compute_escape() {
       }
       if(my_mem != NULL && my_mem->is_Mem()){
         Node* addr = my_mem->as_Mem()->in(MemNode::Address);
-        //addr->dump();
         PointsToNode* ptn = ptnode_adr(addr->_idx);
         if( ptn != NULL && ptn != phantom_obj){
           if((ptn->escape_state() == PointsToNode::NoEscape) || (ptn->escape_state() == PointsToNode::ArgEscape)){
@@ -3095,7 +3094,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist)
         if (!(op == Op_CmpP || op == Op_Conv2B ||
               op == Op_CastP2X || op == Op_StoreCM ||
               op == Op_FastLock || op == Op_AryEq || op == Op_StrComp ||
-              op == Op_StrEquals || op == Op_StrIndexOf)) {
+              op == Op_StrEquals || op == Op_StrIndexOf || op == Op_SCCheck)) {
           n->dump();
           use->dump();
           assert(false, "EA: missing allocation reference path");

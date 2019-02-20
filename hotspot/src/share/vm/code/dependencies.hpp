@@ -105,6 +105,8 @@ class Dependencies: public ResourceObj {
     // must be recompiled.  No other dependencies are implied.
     evol_method,
     FIRST_TYPE = evol_method,
+    evol_fast_klass,
+    evol_klass,
 
     // A context type CX is a leaf it if has no proper subtype.
     leaf_type,
@@ -171,7 +173,7 @@ class Dependencies: public ResourceObj {
     non_klass_types     = (1 << call_site_target_value),
     klass_types         = all_types & ~non_klass_types,
 
-    non_ctxk_types      = (1 << evol_method),
+    non_ctxk_types      = (1 << evol_klass),
     implicit_ctxk_types = (1 << call_site_target_value),
     explicit_ctxk_types = all_types & ~(non_ctxk_types | implicit_ctxk_types),
 
@@ -267,6 +269,8 @@ class Dependencies: public ResourceObj {
  public:
   // Adding assertions to a new dependency set at compile time:
   void assert_evol_method(ciMethod* m);
+  void assert_evol_klass(ciKlass* k);
+  void assert_evol_fast_klass(ciKlass* k); //needs to check if changed
   void assert_leaf_type(ciKlass* ctxk);
   void assert_abstract_with_unique_concrete_subtype(ciKlass* ctxk, ciKlass* conck);
   void assert_abstract_with_no_concrete_subtype(ciKlass* ctxk);
@@ -314,6 +318,7 @@ class Dependencies: public ResourceObj {
 
   // Checking old assertions at run-time (in the VM only):
   static Klass* check_evol_method(Method* m);
+  static Klass* check_evol_fast_klass(Klass* k);
   static Klass* check_leaf_type(Klass* ctxk);
   static Klass* check_abstract_with_unique_concrete_subtype(Klass* ctxk, Klass* conck,
                                                               KlassDepChange* changes = NULL);

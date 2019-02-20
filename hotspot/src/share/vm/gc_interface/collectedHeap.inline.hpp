@@ -55,6 +55,7 @@ void CollectedHeap::post_allocation_setup_no_klass_install(KlassHandle klass,
     // May be bootstrapping
     obj->set_mark(markOopDesc::prototype());
   }
+  obj->set_sc_mark(scOop(Thread::current()));
 }
 
 void CollectedHeap::post_allocation_install_obj_klass(KlassHandle klass,

@@ -282,6 +282,8 @@ class Bytecodes: AllStatic {
     _fast_aldc_w          ,
 
     _return_register_finalizer    ,
+    _direct_getfield,
+    _direct_putfield,
 
     // special handling of signature-polymorphic methods:
     _invokehandle         ,
@@ -434,6 +436,8 @@ class Bytecodes: AllStatic {
                                                                                           code == _invokespecial ||
                                                                                           code == _invokeinterface; }
   static bool        has_optional_appendix(Code code) { return code == _invokedynamic || code == _invokehandle; }
+
+  static bool        is_direct_field_access (Code code)    { return (code == _direct_putfield || code == _direct_getfield); }
 
   static int         compute_flags  (const char* format, int more_flags = 0);  // compute the flags
   static int         flags          (int code, bool is_wide) {

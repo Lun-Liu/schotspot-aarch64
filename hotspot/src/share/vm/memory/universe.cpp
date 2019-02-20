@@ -1229,6 +1229,45 @@ void Universe::flush_dependents_on(instanceKlassHandle dependee) {
   }
 }
 
+
+void Universe::flush_sc_dependents_on(instanceKlassHandle dependee) {
+  //assert_lock_strong(Compile_lock);
+  assert_locked_or_safepoint(Compile_lock);
+  //dependee->set_sc_deoptimized();
+//#ifndef PRODUCT
+//  ResourceMark rm;
+//  tty->print_cr("acquiring mutex Compile_lock...");
+//#endif
+//  //MutexLockerEx mu(Compile_lock, Mutex::_no_safepoint_check_flag);
+//#ifndef PRODUCT
+//  tty->print_cr("acquired mutex Compile_lock...");
+//#endif
+
+  if (CodeCache::number_of_nmethods_with_dependencies() == 0) return;
+
+  // CodeCache can only be updated by a thread_in_VM and they will all be
+  // stopped dring the safepoint so CodeCache will be safe to update without
+  // holding the CodeCache_lock.
+
+  KlassDepChange changes(dependee);
+
+  // Compute the dependent nmethods
+  if (CodeCache::mark_for_sc_deoptimization(dependee) + CodeCache::mark_for_sc_deoptimization(changes) > 0) {
+  //if (CodeCache::mark_for_sc_deoptimization(dependee) > 0) {
+    // At least one nmethod has been marked for deoptimization
+    //VM_Deoptimize op;
+    //VMThread::execute(&op);
+    ResourceMark rm;
+    DeoptimizationMarker dm;
+    // Deoptimize all activations depending on marked nmethods
+    Deoptimization::deoptimize_dependents();
+
+    // Make the dependent methods not entrant
+    CodeCache::make_marked_nmethods_not_entrant();
+  }
+}
+
+
 // Flushes compiled methods dependent on a particular CallSite
 // instance when its target is different than the given MethodHandle.
 void Universe::flush_dependents_on(Handle call_site, Handle method_handle) {

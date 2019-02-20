@@ -721,7 +721,7 @@ bool PhaseIdealLoop::loop_predication_impl(IdealLoopTree *loop) {
 
     ProjNode* proj = if_proj_list.pop()->as_Proj();
     IfNode*   iff  = proj->in(0)->as_If();
-
+    
     if (!proj->is_uncommon_trap_if_pattern(Deoptimization::Reason_none)) {
       if (loop->is_loop_exit(iff)) {
         // stop processing the remaining projs in the list because the execution of them
