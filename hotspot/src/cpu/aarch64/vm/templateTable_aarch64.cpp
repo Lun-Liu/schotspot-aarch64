@@ -979,6 +979,8 @@ void TemplateTable::wide_astore() {
 
 void TemplateTable::iastore() {
   transition(itos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -988,12 +990,16 @@ void TemplateTable::iastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strw(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_INT)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::lastore() {
   transition(ltos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1003,12 +1009,16 @@ void TemplateTable::lastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ str(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_LONG)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::fastore() {
   transition(ftos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1018,12 +1028,16 @@ void TemplateTable::fastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strs(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::dastore() {
   transition(dtos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // v0: value
@@ -1033,13 +1047,17 @@ void TemplateTable::dastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ strd(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   // stack: ..., array, index, value
   __ ldr(r0, at_tos());    // value
   __ ldr(r2, at_tos_p1()); // index
@@ -1088,13 +1106,17 @@ void TemplateTable::aastore() {
   // Pop stack arguments
   __ bind(done);
   __ add(esp, esp, 3 * Interpreter::stackElementSize);
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::bastore()
 {
   transition(itos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1116,13 +1138,17 @@ void TemplateTable::bastore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(0)));
   __ strb(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_BYTE)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::castore()
 {
   transition(itos, vtos);
+  if((SC || SCInter) && !VBDOpt)
+    __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
   // r0: value
@@ -1132,8 +1158,10 @@ void TemplateTable::castore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(1)));
   __ strh(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
+  if((SC || SCInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+  else if(SC || SCInter)
+    __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::sastore()
@@ -2663,13 +2691,16 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ mov(r5, flags);
 
   {
-    if(!SC&&!SCInter){
+    bool is_sc = SC || SCInter;
+    if(!is_sc){
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
       __ membar(MacroAssembler::StoreStore);
       __ bind(notVolatile);
 
-    }
+    } else if(!VBDOpt){
+      __ membar(MacroAssembler::StoreStore);
+    } // otherwise it's sc and vbd-opt skip fence here
   }
 
   // field address
@@ -2829,9 +2860,12 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ bind(Done);
 
   {
-    if(SC || SCInter)
+    bool is_sc = SC || SCInter;
+    if(is_sc && VBDOpt)
     {
       __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+    } else if(is_sc){
+      __ membar(MacroAssembler::StoreLoad);
     } else {
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2925,14 +2959,13 @@ void TemplateTable::fast_storefield(TosState state)
   __ ldr(r1, Address(r2, in_bytes(base + ConstantPoolCacheEntry::f2_offset())));
 
   {
-    if(SC || SCInter)
-    {
-      //__ membar(MacroAssembler::StoreStore);
-    } else {
+    if (!SC && !SCInter){
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
       __ membar(MacroAssembler::StoreStore);
       __ bind(notVolatile);
+    } else if (!VBDOpt){
+      __ membar(MacroAssembler::StoreStore);
     }
   }
 
@@ -2977,9 +3010,11 @@ void TemplateTable::fast_storefield(TosState state)
   }
 
   {
-    if(SC || SCInter)
+    if((SC||SCInter) && VBDOpt)
     {
       __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
+    } else if(SC || SCInter){
+      __ membar(MacroAssembler::StoreLoad);
     } else {
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);

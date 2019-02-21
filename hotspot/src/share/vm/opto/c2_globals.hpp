@@ -135,6 +135,9 @@
   product(bool, AggresiveMemBar, false,                                     \
           "optimize membar for scalar repeacable objects.")                 \
                                                                             \
+  product(bool, VBDOpt, false,                                                  \
+          "New fence insertion design to speed up SC(VBD)")                 \
+                                                                            \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \
                                                                             \
