@@ -147,6 +147,9 @@
   product(bool, OptimizeSCLoop, true,                                       \
           "hoist sc checks out of the loop.")                               \
                                                                             \
+  product(bool, VBDOpt, false,                                                  \
+          "New fence insertion design to speed up SC(VBD)")                 \
+                                                                            \
   notproduct(bool, PrintIdeal, false,                                       \
           "Print ideal graph before code generation")                       \
                                                                             \
