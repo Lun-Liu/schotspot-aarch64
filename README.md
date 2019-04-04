@@ -1,4 +1,4 @@
-# VBD-HotSpot
+# VBDA-HotSpot and S-VBD
 
 This project modified the aarch64 port of HotSpot JVM in OpenJDK8u to provide Volatile-By-Default semantics for HotSpot JVM on ARM64 architecture. ```master``` branch has speculative compilation enabled by default. To use a version based on VBDA-HotSpot without speculative compilation, switch to ```new_membar``` branch, which can also supports VBD-Opt fence insretion optimization by using the flag ```-XX:+VBDOpt```.
 
