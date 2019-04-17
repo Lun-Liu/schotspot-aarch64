@@ -122,7 +122,7 @@
           "Force SC for code, treat every read and write as volatile, essentially equal to +SCInter, +SCComp")      \
                                                                             \
   product(bool, SCVerify, false,                                                  \
-          "Veryfy SC implementation by traverse Ideal Graph")      \
+          "Veryfy SC implementation by traverse Ideal Graph (deprecated, used by VBD-HotSpot (x86)")      \
                                                                             \
   product(bool, SCInter, false,                                             \
           "Seperate flag for SC in inter mode.")                            \
