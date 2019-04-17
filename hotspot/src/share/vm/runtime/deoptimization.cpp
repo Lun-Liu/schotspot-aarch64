@@ -1355,8 +1355,7 @@ JRT_ENTRY(void, Deoptimization::uncommon_trap_inner(JavaThread* thread, jint tra
     ScopeDesc*      trap_scope  = cvf->scope();
     methodHandle    trap_method = trap_scope->method();
     int             trap_bci    = trap_scope->bci();
-    //Bytecodes::Code trap_bc     = trap_method->java_code_at(trap_bci);
-    Bytecodes::Code trap_bc = Bytecodes::_illegal;
+    Bytecodes::Code trap_bc     = trap_method->java_code_at(trap_bci);
     if(trap_bci == -1){
       assert(reason == Deoptimization::Reason_sc_conflict, "Must be because of SC Dynamic");
     }else{
