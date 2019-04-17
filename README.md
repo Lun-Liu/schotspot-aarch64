@@ -45,7 +45,7 @@ the resulting jdk image should be found in build/*.
 OpenJDK8u has some compatability issue with gcc 6.0. You can consider downgrade your gcc if you run into this issue.
 
 ## Run Java programs
-```master``` branch will build to S-VBD and ```new_membar``` branch will build to VBDA-HotSpot.
+```master``` branch will build to S-VBD and ```new_membar``` branch will build to VBDA-HotSpot with an option to enable VBD-Opt fence insertion optimization.
 
 There are several JVM flags we may use:
 * -XX:-TieredCompilation: turn off c1 compiler (only the c2 compiler is modified now).
