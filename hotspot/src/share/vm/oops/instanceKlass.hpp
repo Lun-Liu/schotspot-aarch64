@@ -180,7 +180,6 @@ class InstanceKlass: public Klass {
 
   enum SCState {
     sc_safe,
-    //sc_deoptimizing,
     sc_deoptimized
   };
 
@@ -491,7 +490,6 @@ class InstanceKlass: public Klass {
   bool has_unloaded_dependent() const         { return _has_unloaded_dependent; }
   void set_has_unloaded_dependent(bool value) { _has_unloaded_dependent = value; }
 
-  //bool is_sc_deoptimized() const         { return (_sc_state != sc_safe); }
 private:
   void set_sc_state(SCState state)         { _sc_state = state;}
   void set_sc_safe()                       { _sc_state = sc_safe; }
@@ -500,19 +498,8 @@ public:
   SCState get_sc_state() const             { return (SCState)_sc_state;}
   bool is_sc_safe() const                  { return _sc_state == sc_safe;}
   bool is_sc_deoptimized() const           { return _sc_state == sc_deoptimized;}
-  //void set_is_sc_deoptimized(bool value) { _is_sc_deoptimized = value; }
-  //bool set_sc_deoptimizing()               { return __sync_bool_compare_and_swap(&_sc_state, sc_safe, sc_deoptimizing);}                    
-  //bool set_sc_deoptimized()              { return __sync_bool_compare_and_swap(&_sc_state, sc_deoptimizing, sc_deoptimized);}                    
-  /*bool set_sc_deoptimized()                { 
-      //can only be set if past the above check, no need to sync here    
-#ifndef PRODUCT
-    assert(_sc_state == sc_deoptimizing, "sc state should be deoptimizing");
-#endif
-    _sc_state = sc_deoptimized;
-    return true;
-  }*/
   bool set_sc_deoptimized()                {
-    //can only be set if not already deoptimized    
+    //can only be set if not already deoptimized
     if(_sc_state != sc_safe){
       return false;
     }

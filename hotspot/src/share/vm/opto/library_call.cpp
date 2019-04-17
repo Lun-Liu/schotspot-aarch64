@@ -6365,7 +6365,6 @@ Node * LibraryCallKit::load_field_from_object(Node * fromObj, const char * field
 
   // Compute address and memory type.
   int offset  = field->offset_in_bytes();
-  //bool is_vol = field->is_volatile();
   //[SC] force SC, though not needed in x86
   bool is_vol = true;
   if(!SC && !SCComp)

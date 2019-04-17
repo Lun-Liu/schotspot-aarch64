@@ -408,9 +408,7 @@ int MacroAssembler::biased_sc_enter( Register obj_reg,
                                          Register swap_reg,
                                          Register tmp_reg,
                                          Label& done) {
-  //TODO: need to be finished
   assert(swap_reg == r0, "swap_reg must be rax for cmpxchgq");
-  //bool need_tmp_reg = false;
   assert_different_registers(obj_reg, swap_reg, tmp_reg);
 
   Address mark_addr      (obj_reg, oopDesc::sc_mark_offset_in_bytes());
@@ -428,7 +426,6 @@ int MacroAssembler::biased_sc_enter( Register obj_reg,
   }
 
   return null_check_offset;
-  //return 0;
 }
 
 
@@ -3229,8 +3226,6 @@ void MacroAssembler::store_check_part_2(Register obj) {
   strb(zr, Address(obj, rscratch1));
 }
 
-
-
 void MacroAssembler::load_klass(Register dst, Register src) {
   if (UseCompressedClassPointers) {
     ldrw(dst, Address(src, oopDesc::klass_offset_in_bytes()));
@@ -4209,7 +4204,7 @@ void MacroAssembler::string_indexof(Register str2, Register str1,
 //       int i, j;
 //       unsigned c;
 //       unsigned char bc[ASIZE];
-//    
+//
 //       /* Preprocessing */
 //       for (i = 0; i < ASIZE; ++i)
 //          bc[i] = 0;
@@ -4218,7 +4213,7 @@ void MacroAssembler::string_indexof(Register str2, Register str1,
 //          ++i;
 //          if (c < ASIZE) bc[c] = i;
 //       }
-//    
+//
 //       /* Searching */
 //       j = 0;
 //       while (j <= n - m) {
@@ -4887,7 +4882,7 @@ void MacroAssembler::char_arrays_equals(Register ary1, Register ary2,
   BIND(SAME);
     mov(result, true);
   BIND(DIFFER);	// result already set
-  
+
   BLOCK_COMMENT("} char_arrays_equals");
 }
 

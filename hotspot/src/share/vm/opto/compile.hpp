@@ -1153,7 +1153,7 @@ class Compile : public Phase {
   int  Inline_Warm();                            // Find more inlining work.
   void Finish_Warm();                            // Give up on further inlines.
   void Optimize();                               // Given a graph, optimize it
-  void Verify_SC();
+  void Verify_SC();                              // deprecated for aarch64, used in VBD-HotSpot
   void Code_Gen();                               // Generate code from a graph
 
   // Management of the AliasType table.

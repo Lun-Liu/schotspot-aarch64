@@ -1854,7 +1854,6 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::complete_sc_handling_C(oopDesc* _obj, JavaThread* thread))
-  //printf("%s\n", "SC handling C [Compiler]");
   oop obj(_obj);
   MutexLocker mu(Compile_lock, thread);
   Klass* k = obj->klass();
@@ -1898,7 +1897,6 @@ JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp(JavaThread* thread, o
     return;
   }
 #ifndef PRODUCT
-  //ResourceMark rm;
   tty->print_cr("[%p] sc handling interp triggered by method %s", Thread::current(), m->name_and_sig_as_C_string());
 #endif
   ik->set_sc_deoptimized();
@@ -1912,7 +1910,6 @@ JRT_END
 
 // for sc
 JRT_ENTRY_NO_ASYNC(void, SharedRuntime::SC_handling_Interp_direct(JavaThread* thread, oopDesc* _obj))
-  //printf("%s\n", m->name_and_sig_as_C_string());
   if(_obj->is_array()){
     return;
   }

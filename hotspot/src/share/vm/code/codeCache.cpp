@@ -631,14 +631,7 @@ static int dependentCheckCount = 0;
 
 
 int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
-#ifndef PRODUCT
-  ResourceMark rm;
-  //tty->print_cr("acquiring mutex CodeCache_lock...");
-#endif
   MutexLockerEx mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
-#ifndef PRODUCT
-  //tty->print_cr("acquired mutex CodeCache_lock...");
-#endif
 
 #ifndef PRODUCT
   dependentCheckTime.start();
@@ -658,21 +651,17 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
       Klass* d = str.klass();
       if(SCDynamic){
         instanceKlassHandle ik = InstanceKlass::cast(d);
-	if(ik->is_sc_deoptimized())
-	  continue;
+        if(ik->is_sc_deoptimized())
+          continue;
         ik->set_sc_deoptimized();
-      //  d->print();
 #ifndef PRODUCT
-	ResourceMark rm;
+        ResourceMark rm;
         tty->print_cr("[%p] Dep Klass. Set SC Deoptimized for class %s",Thread::current(), d->internal_name());
-        //TODO: fix this, should set deoptimized later
-        //InstanceKlass::cast(d)->set_sc_deoptimizing();
 #endif
         bool should_skipped = strstr(SCSkipKlass, ik->name()->as_quoted_ascii()) != NULL;
-        //if(strncmp("java/", ik->name()->as_quoted_ascii(), strlen("java/"))!=0)
         if(!should_skipped)
           number_of_marked_CodeBlobs += mark_for_sc_deoptimization(ik);
-        }
+      }
     }
   }
 
@@ -711,7 +700,6 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
 #endif // PRODUCT
 
   int number_of_marked_CodeBlobs = 0;
-  //dependee->set_sc_deoptimized();
 
   // search the hierarchy looking for nmethods which are affected by the loading of this class
 
@@ -726,7 +714,6 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
     nmethod *nm = old_method->code();
     if (nm != NULL) {
       nm->mark_for_deoptimization();
-      //printf("[%p] Deoptimize own method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
       number_of_marked_CodeBlobs++;
     }
   }
@@ -735,9 +722,7 @@ int CodeCache::mark_for_sc_deoptimization(instanceKlassHandle dependee) {
     if (nm->is_marked_for_deoptimization()) {
       // ...Already marked in the previous pass; don't count it again.
     } else if (nm->is_dependent_on_klass(dependee())) {
-      //ResourceMark rm;
       nm->mark_for_deoptimization();
-      //printf("[%p] Deoptimize dependent method%s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
       number_of_marked_CodeBlobs++;
     } else  {
       // flush caches in case they refer to a redefined Method*

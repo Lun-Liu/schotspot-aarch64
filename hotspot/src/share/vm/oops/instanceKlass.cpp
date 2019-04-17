@@ -707,12 +707,11 @@ bool InstanceKlass::link_class_impl(
           return true;
         }
 
-        //SC Dynamic: bare field access detection
+        //SCDynamic: bare field access detection
         {
           ResourceMark rm;
           RefVerifier ref_verifier(this_oop);
           ref_verifier.verify_class();
-	  //ref_verifier.print_statistics();
         }
 
         // also sets rewritten
@@ -1949,12 +1948,6 @@ int InstanceKlass::mark_sc_dependent_nmethods(DepChange& changes) {
         nm->print_dependencies();
       }
       nm->mark_for_deoptimization();
-      //if(SCDynamic){
-          //nm->method()->method_holder()->set_is_sc_deoptimized(true);
-          //printf("[%p] Deoptimize own method %s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
-          //printf("[%p] Set SC Deoptimized for class %s\n",Thread::current(), nm->method()->method_holder()->internal_name());
-          //nm->print();
-      //}
       found++;
     }
     b = b->next();
@@ -1966,7 +1959,6 @@ int InstanceKlass::mark_sc_dependent_nmethods(DepChange& changes) {
       nmethod* nm = m->code();
       if((nm != NULL) && nm->is_alive() && !nm->is_marked_for_deoptimization()){
         nm->mark_for_deoptimization();
-        //printf("[%p] Deoptimize own method %s::%s\n", Thread::current(), nm->method()->method_holder()->internal_name(), nm->method()->name()->as_C_string() );
         found++;
       }
     }

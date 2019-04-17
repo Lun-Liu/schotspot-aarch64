@@ -1263,13 +1263,11 @@ Klass* Dependencies::check_evol_method(Method* m) {
 }
 
 
-// SCDynamic: if during compilation dependent class is not sc_deoptimized 
+// SCDynamic: if during compilation dependent class is not sc_deoptimized
 // it has to be checked now
 Klass* Dependencies::check_evol_fast_klass(Klass* k) {
   assert(must_be_in_vm(), "raw oops here");
-  // Did somebody do a JVMTI RedefineClasses while our backs were turned?
-  // Or is there a now a breakpoint?
-  // (Assumes compiled code cannot handle bkpts; change if UseFastBreakpoints.)
+  // Did somebody changed class sc state while our backs were turned?
   if(k->oop_is_instance() && InstanceKlass::cast(k)->is_sc_deoptimized()){
     return k;
   } else {
@@ -1547,7 +1545,7 @@ Klass* Dependencies::DepStream::check_klass_dependency(KlassDepChange* changes) 
     witness = NULL;  // be optimistic here for SCDynamic
     break;
   case evol_fast_klass:
-    witness = check_evol_fast_klass(type_argument(0));  // check if deoptimized 
+    witness = check_evol_fast_klass(type_argument(0));  // check if deoptimized
     break;
   case leaf_type:
     witness = check_leaf_type(context_type());

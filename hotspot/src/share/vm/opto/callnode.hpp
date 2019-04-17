@@ -1104,7 +1104,7 @@ public:
 //
 // This is a subclass of CallNode because it is a macro node which gets expanded
 // into a code sequence containing a call.  This node takes 3 "parameters":
-//    0  -  object to check 
+//    0  -  object to check
 //    1 -   a SCCheckNode
 //
 class SCNode : public CallNode {
@@ -1150,11 +1150,6 @@ public:
       jvms()->set_map_deep(this);
     }
   }
-
-  bool find_matching_sc(Node* ctrl);
-  bool find_matching_sc_in_block(const Node* ctrl);
-  bool find_sc_for_region(const RegionNode* region);
-  bool find_sc_through_if(Node* node);
 
   Node *   obj_node() const       {return in(TypeFunc::Parms + 0); }
   Node *   check_node() const  {return in(TypeFunc::Parms + 1); }

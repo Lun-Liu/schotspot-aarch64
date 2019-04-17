@@ -2694,7 +2694,6 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
     __ load_klass(r0, r0);
     // TODO: should assert InstanceKlass, assume it to be right now
     __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
-    // TODO: use mask
     __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
     __ br(Assembler::NE, exec);
     // scSafe here, get curthread and compare
@@ -2706,7 +2705,7 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
     else
       __ cmp(r0, rthread);
     __ br(Assembler::EQ, exec);
-    //Deopt here
+    // Deopt here
     __ mov(r0, obj);
     __ call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::SC_handling_Interp_direct), r0);
 
@@ -2739,7 +2738,6 @@ void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
     __ load_klass(r0, r0);
     // TODO: should assert InstanceKlass, assume it to be right now
     __ ldrb(rscratch1, Address(r0, InstanceKlass::sc_deopt_offset()));
-    // TODO: use mask
     __ cmp(rscratch1, (unsigned)InstanceKlass::sc_safe);
     __ br(Assembler::NE, exec);
     // scSafe here, get curthread and compare

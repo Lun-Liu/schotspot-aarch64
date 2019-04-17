@@ -1647,8 +1647,6 @@ PhaseMacroExpand::initialize_object(AllocateNode* alloc,
   if(length == NULL){
       // FOR SC HEADER
       Node* thread = transform_later(new (C) ThreadLocalNode());
-      //Node* cast_thread = transform_later(new (C) CastP2XNode(control, thread));
-      //Node* o_node = transform_later(new (C) OrXNode(cast_thread, sc_mark_node));
       rawmem = make_store(control, rawmem, object, oopDesc::sc_mark_offset_in_bytes(), thread, T_ADDRESS);
   }
 

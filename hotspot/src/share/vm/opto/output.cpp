@@ -249,7 +249,7 @@ void Compile::Insert_zap_nodes() {
               call->entry_point() == OptoRuntime::multianewarray5_Java() ||
               call->entry_point() == OptoRuntime::slow_arraycopy_Java() ||
               call->entry_point() == OptoRuntime::complete_monitor_locking_Java() ||
-	      call->entry_point() == OptoRuntime::complete_sc_handling_Java()
+              call->entry_point() == OptoRuntime::complete_sc_handling_Java()
               ) {
             insert = false;
           }

@@ -862,10 +862,6 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
   if (failing())  return;
   NOT_PRODUCT( verify_graph_edges(); )
 
-  //if(!failing() && OptimizeSCDynamic){
-  //  PhaseRemoveSC();
-  //}
-
   if(SCVerify)
     Verify_SC();
 
@@ -2110,21 +2106,8 @@ void Compile::Verify_SC(){
     if(n->is_Store()){
       Node_Notes* nn = node_notes_at(n->_idx);
       if(!nn || nn -> is_clear() || !nn->jvms()){
-        //printf("jvms() not found\n");
         continue;
       }
-      /*
-      JVMState* caller = nn->jvms();
-      ciMethod* last = NULL;
-      int lastbci = -1;
-      while(caller){
-        if(caller->has_method()){
-          lastbci = caller->bci();
-          last = caller->method();
-        }
-        caller = caller->caller();
-      }
-      Bytecodes::Code c = last->java_code_at_bci(lastbci);*/
       JVMState* j = nn->jvms();
       ciMethod* m = j->method();
       int lastbci = j->bci();
@@ -2176,7 +2159,6 @@ void Compile::Verify_SC(){
           break;
 
           default:
-            //printf("Invalid Store at idx %d\n", n->_idx);
             continue;
 
       }
@@ -3788,7 +3770,7 @@ bool Compile::sc_klass_skipped(const char* hname) const{
   if(strstr(SCSkipKlass, hname) != NULL){
     return true;
   } else {
-    return false; 
+    return false;
   }
 }
 

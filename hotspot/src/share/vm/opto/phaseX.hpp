@@ -154,17 +154,6 @@ public:
 };
 
 
-class PhaseRemoveSC : public Phase {
-  uint _count_init;
-  uint _count_after;
-
-public:
-  PhaseRemoveSC( PhaseNumber phase_num=Remove_SC);
-  void print_statistics(){tty->print_cr("Count before, after: %d %d", _count_init, _count_after);};
-};
-
-
-
 //------------------------------PhaseRenumber----------------------------------
 // Phase that first performs a PhaseRemoveUseless, then it renumbers compiler
 // structures accordingly.

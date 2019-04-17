@@ -129,33 +129,31 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
     if (is_get) {
       bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
       const char* hname;
-      if(is_direct) 
+      if(is_direct)
         hname = field->holder()->name()->as_quoted_ascii();
       else
         hname = C->method()->holder()->name()->as_quoted_ascii();
-      bool is_java_lib = C->sc_klass_skipped(hname); 
-      //bool is_java_lib = false;
+      bool is_java_lib = C->sc_klass_skipped(hname);
       if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
-      } 
+      }
       (void) pop();  // pop receiver before getting
       do_get_xxx(obj, field, is_field, is_direct, is_java_lib);
     } else {
       bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
       const char* hname;
-      if(is_direct) 
+      if(is_direct)
         hname = field->holder()->name()->as_quoted_ascii();
       else
         hname = C->method()->holder()->name()->as_quoted_ascii();
-      bool is_java_lib = C->sc_klass_skipped(hname); 
-      //bool is_java_lib = false;
+      bool is_java_lib = C->sc_klass_skipped(hname);
       if(is_direct && is_field_holder_sc_safe && !is_java_lib){
         //receiver obj
         check_sc_conflict(obj);
         C->dependencies()->assert_evol_fast_klass(field->holder());
-      } 
+      }
       do_put_xxx(obj, field, is_field, is_direct, is_java_lib);
       (void) pop();  // pop receiver after putting
     }
@@ -171,50 +169,31 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
 }
 
 void Parse::check_sc_conflict(Node* obj){
-  //go all the way up through control node
-  //Node* ctrl = control();
-  //while(true){
-  //  if(ctrl->is_Region() && ctrl->req() == 2){
-  //    ctrl = ctrl->in(1);
-  //  } else if (ctrl -> is_Proj() && (ctrl->in(0)->is_MemBar() || ctrl->in(0)->is_SC())){
-  //    ctrl = ctrl->in(0)->in(0);
-  //  } else {
-  //    break;
-  //  }
-  //}
-  //int cnt = ctrl->outcnt();
-  //for(int i = 0; i < cnt; i++){
-  //  Node* child = ctrl->raw_out(i);
-  //  if(child->is_SCCheck() && child->in(1) == obj){
-  //    //found existing SCCheck no need to check here
-  //    return;
-  //  }
-  //}
   kill_dead_locals();
   Node* mem = reset_memory();
   Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), obj));
- 
+
   const TypeFunc *tf = SCNode::sc_type();
   SCNode * sc = new (C) SCNode(C, tf);
- 
+
   sc->init_req( TypeFunc::Control, control() );
   sc->init_req( TypeFunc::Memory , mem );
   sc->init_req( TypeFunc::I_O    , top() )     ;   // does no i/o
   sc->init_req( TypeFunc::FramePtr, frameptr() );
   sc->init_req( TypeFunc::ReturnAdr, top() );
- 
+
   sc->init_req(TypeFunc::Parms + 0, obj);
   sc->init_req(TypeFunc::Parms + 1, sc_check);
- 
+
   add_safepoint_edges(sc);
- 
+
   sc = _gvn.transform( sc )->as_SC();
- 
+
   // lock has no side-effects, sets few values
   set_predefined_output_for_runtime_call(sc, mem, TypeRawPtr::BOTTOM);
- 
+
   insert_mem_bar(Op_MemBarAcquireLock);
- 
+
   // Add this to the worklist so that the lock can be eliminated
   record_for_igvn(sc);
 }
@@ -314,7 +293,6 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   } else {
     type = Type::get_const_basic_type(bt);
   }
-  //if (support_IRIW_for_not_multiple_copy_atomic_cpu && field->is_volatile()) {
   if (support_IRIW_for_not_multiple_copy_atomic_cpu && is_vol) {
     insert_mem_bar(Op_MemBarVolatile);   // StoreLoad barrier
   }
@@ -358,7 +336,6 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   // If reference is volatile, prevent following memory ops from
   // floating up past the volatile read.  Also prevents commoning
   // another volatile read.
-  //if (field->is_volatile()) {
   //[SC]: forcing volatile
   if (is_vol) {
     // Memory barrier includes bogus read of value to force load BEFORE membar

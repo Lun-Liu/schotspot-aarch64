@@ -395,7 +395,6 @@ void PSMarkSweepDecorator::compact(bool mangle_free_space ) {
       assert(q != compaction_top, "everything in this pass should be moving");
       Copy::aligned_conjoint_words(q, compaction_top, size);
       oop(compaction_top)->init_mark();
-      //oop(compaction_top)->set_sc_mark(oop(q)->sc_mark());
       assert(oop(compaction_top)->klass() != NULL, "should have a class");
 
       debug_only(prev_q = q);
