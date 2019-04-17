@@ -548,7 +548,7 @@ IRT_ENTRY(void, InterpreterRuntime::resolve_get_put(JavaThread* thread, Bytecode
   // resolve field
   fieldDescriptor info;
   constantPoolHandle pool(thread, method(thread)->constants());
-  bool is_put    = (bytecode == Bytecodes::_putfield  || bytecode == Bytecodes::_putstatic || bytecode == Bytecodes::_direct_getfield);
+  bool is_put    = (bytecode == Bytecodes::_putfield  || bytecode == Bytecodes::_putstatic || bytecode == Bytecodes::_direct_putfield);
   bool is_static = (bytecode == Bytecodes::_getstatic || bytecode == Bytecodes::_putstatic);
 
   {
