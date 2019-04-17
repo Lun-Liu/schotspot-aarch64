@@ -2106,21 +2106,8 @@ void Compile::Verify_SC(){
     if(n->is_Store()){
       Node_Notes* nn = node_notes_at(n->_idx);
       if(!nn || nn -> is_clear() || !nn->jvms()){
-        //printf("jvms() not found\n");
         continue;
       }
-      /*
-      JVMState* caller = nn->jvms();
-      ciMethod* last = NULL;
-      int lastbci = -1;
-      while(caller){
-        if(caller->has_method()){
-          lastbci = caller->bci();
-          last = caller->method();
-        }
-        caller = caller->caller();
-      }
-      Bytecodes::Code c = last->java_code_at_bci(lastbci);*/
       JVMState* j = nn->jvms();
       ciMethod* m = j->method();
       int lastbci = j->bci();
@@ -2172,7 +2159,6 @@ void Compile::Verify_SC(){
           break;
 
           default:
-            //printf("Invalid Store at idx %d\n", n->_idx);
             continue;
 
       }
@@ -3764,14 +3750,10 @@ bool Compile::sc_method_skipped() const {
     strcpy(name,hname);
     strcat(name,delim);
     strcat(name,mname);
-    //printf("To Comp %s, %s: ", name, SCSkipMethod);
     if(strstr(SCSkipMethod, name) != NULL){
-      //printf("TRUE\n");
-      //printf("%s Skipped\n", name);
       free(name);
       return true;
     }else{
-      //printf("FALSE\n");
       free(name);
       return false;
     }

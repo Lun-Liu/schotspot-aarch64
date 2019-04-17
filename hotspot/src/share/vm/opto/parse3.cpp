@@ -200,7 +200,6 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
   //[SC]: forcing volatile
   bool is_vol = true;
   if (!SC && !SCComp || C->sc_method_skipped())
-  //if (C->sc_skipped() || !SC)
     is_vol = field->is_volatile();
 
   // Compute address and memory type.
@@ -275,7 +274,6 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
   // If reference is volatile, prevent following memory ops from
   // floating up past the volatile read.  Also prevents commoning
   // another volatile read.
-  //if (field->is_volatile()) {
   //[SC]: forcing volatile
   if (is_vol) {
     // Memory barrier includes bogus read of value to force load BEFORE membar
@@ -287,7 +285,6 @@ void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field) {
 
   //[SC]: forcing volatile
   bool is_vol = true;
-  //if (C->sc_skipped() || !SC)
   if (!SC && !SCComp || C->sc_method_skipped())
     is_vol = field->is_volatile();
   // If reference is volatile, prevent following memory ops from
