@@ -6,11 +6,11 @@ This repo is modified from the repo cloned from the Mercurial repository aarch64
 
 To build the JVM, update ```hotspot/``` to the version you want to use (make ```hotspot``` directory first if it doesn't exist)
 ```
-cp -r hotspot-svbd/* hotspot/
+rm hotspot/*; cp -r hotspot-svbd/* hotspot/
 ```
 or
 ```
-cp -r hotspot-vbda/* hotspot/
+rm hotspot/*; cp -r hotspot-vbda/* hotspot/
 ```
 
 ## Build
