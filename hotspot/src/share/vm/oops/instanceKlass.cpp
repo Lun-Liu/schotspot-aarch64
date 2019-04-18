@@ -708,7 +708,7 @@ bool InstanceKlass::link_class_impl(
         }
 
         //SCDynamic: bare field access detection
-        {
+        if (SCDynamic) {
           ResourceMark rm;
           RefVerifier ref_verifier(this_oop);
           ref_verifier.verify_class();

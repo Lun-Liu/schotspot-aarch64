@@ -79,7 +79,9 @@ oop PSPromotionManager::copy_to_survivor_space(oop o) {
   // in o. There may be multiple threads racing on it, and it may be forwarded
   // at any time. Do not use oop methods for accessing the mark!
   markOop test_mark = o->mark();
-  scOop sc_mark = o -> sc_mark();
+  scOop sc_mark = NULL;
+  if (SCDynamic)
+    sc_mark = o -> sc_mark();
 
   // The same test as "o->is_forwarded()"
   if (!test_mark->is_marked()) {
@@ -175,7 +177,8 @@ oop PSPromotionManager::copy_to_survivor_space(oop o) {
     if (o->cas_forward_to(new_obj, test_mark)) {
       // We won any races, we "own" this object.
       assert(new_obj == o->forwardee(), "Sanity");
-      new_obj->set_sc_mark(sc_mark);
+      if (SCDynamic)
+        new_obj->set_sc_mark(sc_mark);
 
       // Increment age if obj still in new generation. Now that
       // we're dealing with a markOop that cannot change, it is

@@ -2684,6 +2684,7 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
 }
 
 void TemplateTable::check_sc_conflict_get(Register obj) {
+    assert(SCDynamic, "should only do dynamic check when SCDynamic is enabled");
     //direct field access
     __ push_ptr(r0);
     __ push_ptr(obj); //saves value in case call_VM changes value
@@ -2715,6 +2716,7 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
 }
 
 void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
+    assert(SCDynamic, "should only do dynamic check when SCDynamic is enabled");
     //direct field access
     switch (tos) {          // load values into the jvalue object
     case atos: __ push_ptr(r0); break;
@@ -3671,7 +3673,8 @@ void TemplateTable::_new() {
 
 
     // FOR SC HEADER
-    __ str(rthread, Address(r0, oopDesc::sc_mark_offset_in_bytes()));
+    if (SCDynamic)
+      __ str(rthread, Address(r0, oopDesc::sc_mark_offset_in_bytes()));
 
     __ str(rscratch1, Address(r0, oopDesc::mark_offset_in_bytes()));
     __ store_klass_gap(r0, zr);  // zero klass gap for compressed oops

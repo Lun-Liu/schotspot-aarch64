@@ -169,6 +169,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
 }
 
 void Parse::check_sc_conflict(Node* obj){
+  assert(SCDynamic, "must be SCDynamic to insert the check node");
   kill_dead_locals();
   Node* mem = reset_memory();
   Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), obj));

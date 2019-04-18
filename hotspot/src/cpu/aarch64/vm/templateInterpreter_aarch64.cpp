@@ -1459,7 +1459,7 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
   }
 
   //for SCDynamic
-  {
+  if (SCDynamic) {
     Label exec;
     __ ldrb(rscratch1, sc_check);
     __ cmp(rscratch1, 0x1);

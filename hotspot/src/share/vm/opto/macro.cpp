@@ -1644,7 +1644,7 @@ PhaseMacroExpand::initialize_object(AllocateNode* alloc,
   }
   rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), mark_node, T_ADDRESS);
 
-  if(length == NULL){
+  if(length == NULL && SCDynamic){
       // FOR SC HEADER
       Node* thread = transform_later(new (C) ThreadLocalNode());
       rawmem = make_store(control, rawmem, object, oopDesc::sc_mark_offset_in_bytes(), thread, T_ADDRESS);
