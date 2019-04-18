@@ -1,22 +1,21 @@
 # VBDA-HotSpot and S-VBD
 
-This project modified the aarch64 port of HotSpot JVM in OpenJDK8u to provide Volatile-By-Default semantics for HotSpot JVM on ARM64 architecture. ```master``` branch has speculative compilation enabled by default. To use a version based on VBDA-HotSpot without speculative compilation, switch to ```new_membar``` branch, which can also supports VBD-Opt fence insretion optimization by using the flag ```-XX:+VBDOpt```.
+This project modified the aarch64 port of HotSpot JVM in OpenJDK8u to provide Volatile-By-Default semantics for HotSpot JVM on ARM64 architecture. ```hotspot-svbd``` contains S-VBD and ```hotspot-vbda``` contains VBDA-HotSpot. Both also support VBD-Opt fence insretion optimization by using the flag ```-XX:+VBDOpt```.
 
-This repo is a part of the repo cloned from the Mercurial repository aarch64-port/jdk8u (last changeset: 1893:4ac8e58e26e2). Therefore, to build this JVM from source, get the repository from openjdk Mercurial repository and switch to the revision.
-```
-hg clone http://hg.openjdk.java.net/aarch64-port/jdk8u jdk8u
-cd jdk8u/
-bash ./get_source.sh
-hg update -r 1893:4ac8e58e26e2
-```
-The original README file can also be found in this repo.
+This repo is modified from the repo cloned from the Mercurial repository aarch64-port/jdk8u (last changeset: 1893:4ac8e58e26e2). 
 
-Update ```hotspot/src``` to this repo. 
+Get the source code from github
 ```
-git init
-git remote add origin git@github.com:Lun-Liu/schotspot-aarch64.git
-git fetch origin
-git checkout -b master --track origin/master  --force
+git clone git@github.com:Lun-Liu/schotspot-aarch64.git
+```
+
+Update ```hotspot/src``` to the version you want to use. 
+```
+cp -r hotspot-svbd/ hotspot/
+```
+or
+```
+cp -r hotspot-vbda/ hotspot/
 ```
 
 ## Build
