@@ -4,7 +4,7 @@ This project modified the aarch64 port of HotSpot JVM in OpenJDK8u to provide Vo
 
 This repo is modified from the repo cloned from the Mercurial repository aarch64-port/jdk8u (last changeset: 1893:4ac8e58e26e2). 
 
-To build the JVM, update ```hotspot/src``` to the version you want to use (make ```hotspot``` directory first if it doesn't exist)
+To build the JVM, update ```hotspot/``` to the version you want to use (make ```hotspot``` directory first if it doesn't exist)
 ```
 cp -r hotspot-svbd/* hotspot/
 ```
