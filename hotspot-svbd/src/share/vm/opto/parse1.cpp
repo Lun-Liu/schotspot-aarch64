@@ -487,7 +487,7 @@ Parse::Parse(JVMState* caller, ciMethod* parse_method, float expected_uses)
   if (C->env()->jvmti_can_hotswap_or_post_breakpoint()) {
     C->dependencies()->assert_evol_method(method());
   }
-  if(SCDynamic && method()->holder()->is_sc_safe())
+  if(VBDDynamic && method()->holder()->is_sc_safe())
     C->dependencies()->assert_evol_fast_klass(method() -> holder());
 
   methods_seen++;
@@ -961,7 +961,7 @@ void Parse::do_exits() {
   // stores. We want to quarantee the same behaviour as on platforms
   // with total store order, although this is not required by the Java
   // memory model. So as with finals, we add a barrier here.
-  if (!(SC && AggresiveMemBar) && wrote_final() PPC64_ONLY(|| (wrote_volatile() && method()->is_initializer()))) {
+  if (!(VBD && AggresiveMemBar) && wrote_final() PPC64_ONLY(|| (wrote_volatile() && method()->is_initializer()))) {
     // This method (which must be a constructor by the rules of Java)
     // wrote a final.  The effects of all initializations must be
     // committed to memory before any code after the constructor
@@ -986,7 +986,7 @@ void Parse::do_exits() {
 
   const char* hname = C->method()->holder()->name()->as_quoted_ascii();
   bool is_java_lib = C->sc_klass_skipped(hname);
-  if(SC && SCDynamic && is_java_lib){
+  if(VBD && VBDDynamic && is_java_lib){
     // this method is skipped, insert a StoreFence in case followed by a non skipped method
     _exits.insert_mem_bar(Op_StoreFence);
   }
@@ -1194,7 +1194,7 @@ void Parse::do_method_entry() {
 
   const char* hname = C->method()->holder()->name()->as_quoted_ascii();
   bool is_java_lib = C->sc_klass_skipped(hname);
-	if(SCDynamic  && (method()->holder()->is_sc_safe() &&!is_java_lib )){
+	if(VBDDynamic  && (method()->holder()->is_sc_safe() &&!is_java_lib )){
 		Node* lock_obj = NULL;
 		if(!method()->is_static()){
 			lock_obj = local(0);

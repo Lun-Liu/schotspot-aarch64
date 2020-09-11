@@ -1052,7 +1052,7 @@ Klass* ClassHierarchyWalker::find_witness_in(KlassDepChange& changes,
   }
 
   //assert(!is_participant(new_type), "only old classes are participants");
-  if(!SCDynamic){
+  if(!VBDDynamic){
     assert(!is_participant(new_type), "only old classes are participants");
   }
   if (participants_hide_witnesses) {
@@ -1263,7 +1263,7 @@ Klass* Dependencies::check_evol_method(Method* m) {
 }
 
 
-// SCDynamic: if during compilation dependent class is not sc_deoptimized
+// VBDDynamic: if during compilation dependent class is not sc_deoptimized
 // it has to be checked now
 Klass* Dependencies::check_evol_fast_klass(Klass* k) {
   assert(must_be_in_vm(), "raw oops here");
@@ -1542,7 +1542,7 @@ Klass* Dependencies::DepStream::check_klass_dependency(KlassDepChange* changes) 
     witness = check_evol_method(method_argument(0));
     break;
   case evol_klass:
-    witness = NULL;  // be optimistic here for SCDynamic
+    witness = NULL;  // be optimistic here for VBDDynamic
     break;
   case evol_fast_klass:
     witness = check_evol_fast_klass(type_argument(0));  // check if deoptimized

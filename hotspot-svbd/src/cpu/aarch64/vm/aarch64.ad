@@ -2588,7 +2588,7 @@ bool unnecessary_release(const Node *n)
 	  n->Opcode() == Op_MemBarRelease),
 	 "expecting a release membar");
 
-  if((SC || SCComp) && VBDOpt)
+  if((VBD || VBDComp) && VBDOpt)
     return true;
   if (UseBarriersForVolatile) {
     // we need to plant a dmb

@@ -2069,7 +2069,7 @@ void SystemDictionary::update_dictionary(int d_index, unsigned int d_hash,
     }
   }
 
-  if(SCDynamic){
+  if(VBDDynamic){
     if(k->class_loader() == class_loader() ){
       assert(k->oop_is_instance(), "must be instance klass");
       k -> set_sc_safe();

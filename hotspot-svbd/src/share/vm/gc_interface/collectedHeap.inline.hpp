@@ -55,7 +55,7 @@ void CollectedHeap::post_allocation_setup_no_klass_install(KlassHandle klass,
     // May be bootstrapping
     obj->set_mark(markOopDesc::prototype());
   }
-  if (SCDynamic)
+  if (VBDDynamic)
     obj->set_sc_mark(scOop(Thread::current()));
 }
 

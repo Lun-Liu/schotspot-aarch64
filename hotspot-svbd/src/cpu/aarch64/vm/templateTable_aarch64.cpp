@@ -678,7 +678,7 @@ void TemplateTable::iaload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1, Address(r0, r1, Address::uxtw(2)));
   __ ldrw(r0, Address(r1, arrayOopDesc::base_offset_in_bytes(T_INT)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -692,7 +692,7 @@ void TemplateTable::laload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1, Address(r0, r1, Address::uxtw(3)));
   __ ldr(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_LONG)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -706,7 +706,7 @@ void TemplateTable::faload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(2)));
   __ ldrs(v0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
-  if(SC || SCInter)
+  if(VBD || VBD)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -720,7 +720,7 @@ void TemplateTable::daload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(3)));
   __ ldrd(v0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -735,7 +735,7 @@ void TemplateTable::aaload()
   int s = (UseCompressedOops ? 2 : 3);
   __ lea(r1, Address(r0, r1, Address::uxtw(s)));
   __ load_heap_oop(r0, Address(r1, arrayOopDesc::base_offset_in_bytes(T_OBJECT)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -749,7 +749,7 @@ void TemplateTable::baload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(0)));
   __ load_signed_byte(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_BYTE)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -763,7 +763,7 @@ void TemplateTable::caload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_unsigned_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -782,7 +782,7 @@ void TemplateTable::fast_icaload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_unsigned_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -796,7 +796,7 @@ void TemplateTable::saload()
   index_check(r0, r1); // leaves index in r1, kills rscratch1
   __ lea(r1,  Address(r0, r1, Address::uxtw(1)));
   __ load_signed_short(r0, Address(r1,  arrayOopDesc::base_offset_in_bytes(T_SHORT)));
-  if(SC || SCInter)
+  if(VBD || VBDInter)
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 }
 
@@ -979,7 +979,7 @@ void TemplateTable::wide_astore() {
 
 void TemplateTable::iastore() {
   transition(itos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -990,15 +990,15 @@ void TemplateTable::iastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strw(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_INT)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::lastore() {
   transition(ltos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -1009,15 +1009,15 @@ void TemplateTable::lastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ str(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_LONG)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::fastore() {
   transition(ftos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -1028,15 +1028,15 @@ void TemplateTable::fastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(2)));
   __ strs(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_FLOAT)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::dastore() {
   transition(dtos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -1047,16 +1047,16 @@ void TemplateTable::dastore() {
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(3)));
   __ strd(v0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_DOUBLE)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   // stack: ..., array, index, value
   __ ldr(r0, at_tos());    // value
@@ -1106,16 +1106,16 @@ void TemplateTable::aastore() {
   // Pop stack arguments
   __ bind(done);
   __ add(esp, esp, 3 * Interpreter::stackElementSize);
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::bastore()
 {
   transition(itos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -1138,16 +1138,16 @@ void TemplateTable::bastore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(0)));
   __ strb(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_BYTE)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
 void TemplateTable::castore()
 {
   transition(itos, vtos);
-  if((SC || SCInter) && !VBDOpt)
+  if((VBD || VBDInter) && !VBDOpt)
     __ membar(MacroAssembler::StoreStore);
   __ pop_i(r1);
   __ pop_ptr(r3);
@@ -1158,9 +1158,9 @@ void TemplateTable::castore()
   __ lea(rscratch1, Address(r3, r1, Address::uxtw(1)));
   __ strh(r0, Address(rscratch1,
 		      arrayOopDesc::base_offset_in_bytes(T_CHAR)));
-  if((SC || SCInter) && VBDOpt)
+  if((VBD || VBDInter) && VBDOpt)
     __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-  else if(SC || SCInter)
+  else if(VBD || VBDInter)
     __ membar(MacroAssembler::StoreLoad);
 }
 
@@ -2684,7 +2684,7 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
 }
 
 void TemplateTable::check_sc_conflict_get(Register obj) {
-    assert(SCDynamic, "should only do dynamic check when SCDynamic is enabled");
+    assert(VBDDynamic, "should only do dynamic check when VBDDynamic is enabled");
     //direct field access
     __ push_ptr(r0);
     __ push_ptr(obj); //saves value in case call_VM changes value
@@ -2716,7 +2716,7 @@ void TemplateTable::check_sc_conflict_get(Register obj) {
 }
 
 void TemplateTable::check_sc_conflict_put(Register obj, TosState tos) {
-    assert(SCDynamic, "should only do dynamic check when SCDynamic is enabled");
+    assert(VBDDynamic, "should only do dynamic check when VBDDynamic is enabled");
     //direct field access
     switch (tos) {          // load values into the jvalue object
     case atos: __ push_ptr(r0); break;
@@ -2792,7 +2792,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, bool rewrite
   __ mov(r5, flags);
 
   {
-    bool is_sc = SC || SCInter;
+    bool is_sc = VBD || VBDInter;
     if(!is_sc){
       Label notVolatile;
       __ tbz(r5, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
@@ -2970,7 +2970,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, bool rewrite
   __ bind(Done);
 
   {
-    bool is_sc = SC || SCInter;
+    bool is_sc = VBD || VBDInter;
     if(is_sc && VBDOpt)
     {
       __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
@@ -3074,7 +3074,7 @@ void TemplateTable::fast_storefield(TosState state)
   __ ldr(r1, Address(r2, in_bytes(base + ConstantPoolCacheEntry::f2_offset())));
 
   {
-    if (!SC && !SCInter){
+    if (!VBD && !VBDInter){
       Label notVolatile;
       __ tbz(r3, ConstantPoolCacheEntry::is_volatile_shift, notVolatile);
       __ membar(MacroAssembler::StoreStore);
@@ -3125,10 +3125,10 @@ void TemplateTable::fast_storefield(TosState state)
   }
 
   {
-    if((SC||SCInter) && VBDOpt)
+    if((VBD || VBDInter) && VBDOpt)
     {
       __ membar(MacroAssembler::StoreLoad | MacroAssembler::StoreStore);
-    } else if(SC || SCInter){
+    } else if(VBD || VBDInter){
       __ membar(MacroAssembler::StoreLoad);
     } else {
       Label notVolatile;
@@ -3209,7 +3209,7 @@ void TemplateTable::fast_accessfield(TosState state)
     ShouldNotReachHere();
   }
   {
-    if(SC || SCInter)
+    if(VBD || VBDInter)
     {
       __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
     } else {
@@ -3251,7 +3251,7 @@ void TemplateTable::fast_xaccess(TosState state)
   }
 
   {
-    if(SC || SCInter)
+    if(VBD || VBDInter)
     {
       __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
     } else {
@@ -3673,7 +3673,7 @@ void TemplateTable::_new() {
 
 
     // FOR SC HEADER
-    if (SCDynamic)
+    if (VBDDynamic)
       __ str(rthread, Address(r0, oopDesc::sc_mark_offset_in_bytes()));
 
     __ str(rscratch1, Address(r0, oopDesc::mark_offset_in_bytes()));

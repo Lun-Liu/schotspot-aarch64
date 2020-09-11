@@ -782,7 +782,7 @@ address InterpreterGenerator::generate_CRC32_update_entry() {
 
     __ ornw(crc, zr, crc); // ~crc
     __ update_byte_crc32(crc, val, tbl);
-    if(SC || SCInter)
+    if(VBD || VBDInter)
       __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
     __ ornw(crc, zr, crc); // ~crc
 
@@ -853,7 +853,7 @@ address InterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractInterpret
     // We are frameless so we can just jump to the stub.
     __ b(CAST_FROM_FN_PTR(address, StubRoutines::updateBytesCRC32()));
 
-    if(SC || SCInter)
+    if(VBD || VBDInter)
       __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
 
     // generate a vanilla native entry as the slow path

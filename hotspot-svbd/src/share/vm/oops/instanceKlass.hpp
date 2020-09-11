@@ -234,7 +234,7 @@ class InstanceKlass: public Klass {
   bool            _is_marked_dependent;  // used for marking during flushing and deoptimization
   bool            _has_unloaded_dependent;
 
-  //mark for SCDynamic
+  //mark for VBDDynamic
   u1              _sc_state;
 
 

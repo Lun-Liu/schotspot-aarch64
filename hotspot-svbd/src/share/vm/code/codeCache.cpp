@@ -649,7 +649,7 @@ int CodeCache::mark_for_sc_deoptimization(DepChange& changes) {
   { //No_Safepoint_Verifier nsv;
     for (DepChange::ContextStream str(changes); str.next(); ) {
       Klass* d = str.klass();
-      if(SCDynamic){
+      if(VBDDynamic){
         instanceKlassHandle ik = InstanceKlass::cast(d);
         if(ik->is_sc_deoptimized())
           continue;

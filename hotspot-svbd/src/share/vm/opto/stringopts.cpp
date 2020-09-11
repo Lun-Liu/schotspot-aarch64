@@ -1645,7 +1645,7 @@ void PhaseStringOpts::replace_string_concat(StringConcat* sc) {
     // of the initialization is committed to memory before any code publishes
     // a reference to the newly constructed object (see Parse::do_exits()).
     assert(AllocateNode::Ideal_allocation(result, _gvn) != NULL, "should be newly allocated");
-    if(!(SC && AggresiveMemBar))
+    if(!(VBD && AggresiveMemBar))
       kit.insert_mem_bar(Op_MemBarRelease, result);
   } else {
     result = C->top();

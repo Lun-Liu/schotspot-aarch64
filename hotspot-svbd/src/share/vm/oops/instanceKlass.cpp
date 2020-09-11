@@ -707,8 +707,8 @@ bool InstanceKlass::link_class_impl(
           return true;
         }
 
-        //SCDynamic: bare field access detection
-        if (SCDynamic) {
+        //VBDDynamic: bare field access detection
+        if (VBDDynamic) {
           ResourceMark rm;
           RefVerifier ref_verifier(this_oop);
           ref_verifier.verify_class();
@@ -1952,7 +1952,7 @@ int InstanceKlass::mark_sc_dependent_nmethods(DepChange& changes) {
     }
     b = b->next();
   }
-  if(SCDynamic){
+  if(VBDDynamic){
     int len = methods()->length();
     for(int i = 0; i < len; i++){
       Method* m = methods()->at(i);

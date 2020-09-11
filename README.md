@@ -6,11 +6,11 @@ This repo is modified from the repo cloned from the Mercurial repository aarch64
 
 To build the JVM, update ```hotspot/``` to the version you want to use (make ```hotspot``` directory first if it doesn't exist)
 ```
-rm hotspot/*; cp -r hotspot-svbd/* hotspot/
+rm -rf hotspot/*; cp -r hotspot-svbd/* hotspot/
 ```
 or
 ```
-rm hotspot/*; cp -r hotspot-vbda/* hotspot/
+rm -rf hotspot/*; cp -r hotspot-vbda/* hotspot/
 ```
 
 ## Build
@@ -43,14 +43,14 @@ OpenJDK8u has some compatability issue with gcc 6.0. You can consider downgrade 
 
 There are several JVM flags we may use:
 * -XX:-TieredCompilation: turn off c1 compiler (only the c2 compiler is modified now).
-* -XX:+SC: enable VBD semantics
+* -XX:+VBD: enable VBD semantics
 * -XX:-OptimizeStringConcat: disables String intrinsics optimizations
 * -XX:+AggresiveMemBar: allows more optimizations for non-escaping objects
-* -XX:+SCDynamic: enable speculative compilation
+* -XX:+VBDDynamic: enable speculative compilation
 * -XX:+VBDOpt: enable VBD-Opt fence insertion optimization
 * -XX:+DynamicCheckOnly: Check-Only version for S-VBD
 
-Note that VBDA-HotSpot follows the design of previous work on x86 (https://github.com/SC-HotSpot/VBD-HotSpot) and thus inherits usage of flags: -XX:-TieredCompilation, -XX:-OptimizeStringConcat, and -XX:+AggresiveMemBar. Also note that when -XX:+SC is not on, VBDA-HotSpot should be the same as the baseline JVM. 
+Note that VBDA-HotSpot follows the design of previous work on x86 (https://github.com/SC-HotSpot/VBD-HotSpot) and thus inherits usage of flags: -XX:-TieredCompilation, -XX:-OptimizeStringConcat, and -XX:+AggresiveMemBar. Also note that when -XX:+VBD is not on, VBDA-HotSpot should be the same as the baseline JVM. 
 
 We can use different flags to run Java programs with different VMs. Below are some examples.
 
@@ -67,15 +67,15 @@ To run some Java program using baseline JVM with two-way fence, use the followin
 
 To run some Java program using VBDA-HotSpot with default one-way fence, use the following command:
 ```
-/PATH/TO/java -XX:-TieredCompilation -XX:+SC -XX:-OptimizeStringConcat -XX:+AggresiveMemBar SomeJavaProgram
+/PATH/TO/java -XX:-TieredCompilation -XX:+VBD -XX:-OptimizeStringConcat -XX:+AggresiveMemBar SomeJavaProgram
 ```
 
 To run some Java program using VBDA-HotSpot with two-way fence, use the following command:
 ```
-/PATH/TO/java -XX:-TieredCompilation -XX:+SC -XX:-OptimizeStringConcat -XX:+AggresiveMemBar -XX:+UseBarriersForVolatile SomeJavaProgram
+/PATH/TO/java -XX:-TieredCompilation -XX:+VBD -XX:-OptimizeStringConcat -XX:+AggresiveMemBar -XX:+UseBarriersForVolatile SomeJavaProgram
 ```
 
 To run some Java program with S-VBD, use the following command:
 ```
-/PATH/TO/java -XX:-TieredCompilation -XX:+SC -XX:+SCDynamic -XX:-OptimizeStringConcat -XX:+AggresiveMemBar -XX:+UseBarriersForVolatile -XX:+VBDOpt SomeJavaProgram
+/PATH/TO/java -XX:-TieredCompilation -XX:+VBD -XX:+VBDDynamic -XX:-OptimizeStringConcat -XX:+AggresiveMemBar -XX:+UseBarriersForVolatile -XX:+VBDOpt SomeJavaProgram
 ```

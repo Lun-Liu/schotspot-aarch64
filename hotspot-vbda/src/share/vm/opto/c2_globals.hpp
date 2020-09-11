@@ -118,17 +118,17 @@
   develop(intx, OptoPeepholeAt, -1,                                         \
           "Apply peephole optimizations to this peephole rule")             \
                                                                             \
-  product(bool, SC, false,                                                  \
-          "Force SC for code, treat every read and write as volatile, essentially equal to +SCInter, +SCComp")      \
+  product(bool, VBD, false,                                                  \
+          "Force VBD for code, treat every read and write as volatile, essentially equal to +VBD, +VBDComp")      \
                                                                             \
   product(bool, SCVerify, false,                                                  \
-          "Veryfy SC implementation by traverse Ideal Graph (deprecated, used by VBD-HotSpot (x86)")      \
+          "Veryfy VBD implementation by traverse Ideal Graph (deprecated, used by VBD-HotSpot (x86)")      \
                                                                             \
-  product(bool, SCInter, false,                                             \
-          "Seperate flag for SC in inter mode.")                            \
+  product(bool, VBDInter, false,                                             \
+          "Seperate flag for VBD in inter mode.")                            \
                                                                             \
-  product(bool, SCComp, false,                                              \
-          "Seperate flag for SC in compiler mode.")                         \
+  product(bool, VBDComp, false,                                              \
+          "Seperate flag for VBD in compiler mode.")                         \
   product(ccstrlist, SCSkipMethod, "",                                               \
           "skip inserting fences for certain method, specified by format class::method, class::method,...")      \
                                                                             \

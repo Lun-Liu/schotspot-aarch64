@@ -169,7 +169,7 @@ void Parse::do_field_access(bool is_get, bool is_field, bool is_direct) {
 }
 
 void Parse::check_sc_conflict(Node* obj){
-  assert(SCDynamic, "must be SCDynamic to insert the check node");
+  assert(VBDDynamic, "must be VBDDynamic to insert the check node");
   kill_dead_locals();
   Node* mem = reset_memory();
   Node* sc_check = _gvn.transform(new (C) SCCheckNode(control(), obj));
@@ -258,12 +258,12 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   bool is_method_sc_safe = method()->holder()->is_sc_safe();
   bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
 
-  if(SCDynamic && is_field){
+  if(VBDDynamic && is_field){
     if(!is_direct && is_method_sc_safe || is_direct && is_field_holder_sc_safe)
       is_vol = field -> is_volatile();
   }
 
-  if((!SC && !SCComp) || C-> sc_method_skipped() ||is_java_lib )
+  if((!VBD && !VBDComp) || C-> sc_method_skipped() ||is_java_lib )
     is_vol = field -> is_volatile();
 
   // Compute address and memory type.
@@ -337,7 +337,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   // If reference is volatile, prevent following memory ops from
   // floating up past the volatile read.  Also prevents commoning
   // another volatile read.
-  //[SC]: forcing volatile
+  //[VBD]: forcing volatile
   if (is_vol) {
     // Memory barrier includes bogus read of value to force load BEFORE membar
     insert_mem_bar(Op_MemBarAcquire, ld);
@@ -349,13 +349,13 @@ void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field, bool is_direct,
   bool is_vol = true;
   bool is_method_sc_safe = method()->holder()->is_sc_safe();
   bool is_field_holder_sc_safe = field -> holder()->is_sc_safe();
-  //[SC]: forcing volatile
-  if(SCDynamic && is_field){
+  //[VBD]: forcing volatile
+  if(VBDDynamic && is_field){
     if(!is_direct && is_method_sc_safe || is_direct && is_field_holder_sc_safe)
       is_vol = field -> is_volatile();
   }
 
-  if((!SC && !SCComp) || C-> sc_method_skipped() || is_java_lib )
+  if((!VBD && !VBDComp) || C-> sc_method_skipped() || is_java_lib )
     is_vol = field -> is_volatile();
   // If reference is volatile, prevent following memory ops from
   // floating down past the volatile write.  Also prevents commoning
